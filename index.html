@@ -183,6 +183,9 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 .chardesc{width:100%;text-align:left;background:var(--panel);border-radius:.5em;padding:.5em .7em;font-size:.8em;color:#c5d0d6;line-height:1.4;display:flex;flex-direction:column;gap:.2em}
 .chardesc .cdn{font-weight:700;color:var(--text)}
 .chardesc .cdt{font-size:.85em;color:var(--coral)}.chardesc .cdt.ok{color:var(--teal)}
+/* Language toggle */
+.langbtn{position:absolute;top:calc(.9em + env(safe-area-inset-top,0px));right:.9em;background:var(--panel2);border:2px solid var(--ink);border-radius:2em;padding:.25em .7em;font-weight:700;font-size:.78em;letter-spacing:.08em;box-shadow:inset 0 0 0 1px var(--line)}
+.langbtn:hover{background:#253043}
 /* Name + leaderboard */
 .nameinp{font:inherit;font-size:1.1em;font-weight:600;padding:.6em .8em;border-radius:.5em;border:2px solid var(--ink);background:var(--panel);color:var(--text);box-shadow:inset 0 0 0 1px var(--line);width:100%}
 .nameinp:focus{outline:3px solid var(--gold);outline-offset:1px}
@@ -249,6 +252,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 
   <!-- Main menu -->
   <div class="ov" id="scrMenu">
+    <button class="langbtn" id="bLangMenu" aria-label="Sprache wechseln / Change language">EN</button>
     <div class="tag">2D Vertical Roguelite</div>
     <div class="logo">LOOT<span>JUMPER</span></div>
     <div class="bank">
@@ -332,6 +336,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
       <label class="vol" for="volMus"><span>Musik</span><input type="range" id="volMus" min="0" max="100" step="5"><b id="volMusV">60%</b></label>
       <label class="vol" for="volSfx"><span>Effekte</span><input type="range" id="volSfx" min="0" max="100" step="5"><b id="volSfxV">80%</b></label>
       <button class="btn" id="bShake">Bildschirmwackeln: an</button>
+      <button class="btn" id="bLang">Sprache: Deutsch</button>
       <button class="btn" id="bName">Name ändern</button>
       <button class="btn" id="bReset">Spielstand zurücksetzen</button>
       <button class="btn" data-back>Zurück</button>
@@ -376,6 +381,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
       <label class="vol" for="pSfx"><span>Effekte</span><input type="range" id="pSfx" min="0" max="100" step="5"><b id="pSfxV">80%</b></label>
       <button class="btn" id="pSound">Ton: an</button>
       <button class="btn" id="pShake">Bildschirmwackeln: an</button>
+      <button class="btn" id="pLang">Sprache: Deutsch</button>
     </div>
     <details class="dev" id="devBox">
       <summary>Testmodus</summary>
@@ -425,6 +431,172 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 <script>
 (()=>{
 'use strict';
+/* ================= SPRACHE / LANGUAGE (Deutsch ist die Quelle, Englisch per Tabelle) ================= */
+let LANG='de';
+// Texte aus Code und HTML: deutscher Originaltext -> englisch
+const EN_TXT={
+ // HUD / Menü / HTML
+ 'Rekord':'Record','SCHILD':'SHIELD','TESTMODUS':'TEST MODE','Zone':'Zone','Münzen':'Coins','Items':'Items',
+ 'Run starten':'Start run','Truhen öffnen':'Open chests','Bestenliste':'Leaderboard','Sammlung':'Collection','Einstellungen':'Settings',
+ 'oder':'or','bewegen · Springen und Schießen passieren automatisch':'move · jumping and shooting happen automatically',
+ 'Doppelsprung (mit Wolkenstiefel)':'double jump (with Cloud Boots)','Handy: linke/rechte Hälfte halten · nach oben wischen = Doppelsprung ·':'Phone: hold left/right half · swipe up = double jump ·',
+ '= Pause ·':'= pause ·','Pause ·':'pause ·','Ton':'sound','← Zurück':'← Back','Charakter':'Character','Loot-Pool':'Loot pool',
+ 'Nur diese Items können im Run erscheinen. Im Run hast du 3 Fähigkeits- und 3 Werte-Slots. Sind sie voll, gibt es nur noch Upgrades.':'Only these items can appear in a run. You have 3 ability and 3 stat slots per run. Once they are full, you only get upgrades.',
+ 'Fähigkeiten':'Abilities','Werte':'Stats','Wie heißt du?':"What's your name?",'Dein Name erscheint in der Bestenliste neben deinem höchsten Score.':'Your name appears on the leaderboard next to your best score.',
+ "Los geht's":"Let's go",'Aktualisieren':'Refresh','Truhen':'Chests',
+ 'Truhen schalten Items dauerhaft frei. Sie landen danach im Loot-Pool deiner Runs.':'Chests unlock items permanently. They are then added to the loot pool of your runs.',
+ 'Nur Ingame-Münzen, keine Echtgeldkäufe. Keine Duplikate: Ist eine Seltenheit komplett freigeschaltet, wird die nächstliegende gezogen.':'In-game coins only, no real-money purchases. No duplicates: if a rarity is fully unlocked, the closest one is drawn instead.',
+ 'Ton: an':'Sound: on','Ton: aus':'Sound: off','Musik':'Music','Effekte':'Effects','Bildschirmwackeln: an':'Screen shake: on','Bildschirmwackeln: aus':'Screen shake: off',
+ 'Name ändern':'Change name','Spielstand zurücksetzen':'Reset save data','Zurück':'Back','Beute!':'Loot!','Wähle eine Verbesserung ·':'Choose an upgrade ·',
+ 'Überspringen und 15 Münzen nehmen':'Skip and take 15 coins','Nach dem Bosskampf':'After the boss fight','Händler':'Merchant',
+ 'Bezahlt wird mit den Münzen dieses Runs. Was du hier ausgibst, landet am Ende nicht auf deinem Konto.':'You pay with this run’s coins. Whatever you spend here won’t be added to your account at the end.',
+ 'Weiter klettern':'Keep climbing','Ereignis':'Event','Pause':'Pause','Testmodus':'Test mode',
+ 'Teleport in eine Zone. Der Run zählt danach nicht mehr für Rekord und Münzkonto.':'Teleport to a zone. The run no longer counts towards your record and coin balance.',
+ 'Boss jetzt':'Boss now','+200 Münzen':'+200 coins','Beute öffnen':'Open loot','Unverwundbar: aus':'Invincible: off','Unverwundbar: an':'Invincible: on','Ereignis jetzt':'Event now','Alle Charaktere freischalten':'Unlock all characters',
+ 'zum Weiterspielen':'to continue','Weiter':'Continue','Run beenden':'End run','Run beendet':'Run over','Abgestürzt':'Fell to your doom','Neuer Run':'New run','Hauptmenü':'Main menu',
+ 'Truhe':'Chest','Truhe öffnet sich':'Chest is opening','Klicken oder':'Click or','Leertaste':'Space','zum Überspringen':'to skip',
+ 'Spielfeld':'Playing field','Name (2–16 Zeichen)':'Name (2–16 characters)','Spielername':'Player name','Item-Walze':'Item reel','Pause':'Pause',
+ 'Sprache: Deutsch':'Language: English',
+ // Ingame-Meldungen
+ 'Zone 1':'Zone 1','Blitzschlag':'Lightning strike','Power-up: ':'Power-up: ','Zersplittert!':'Shattered!','Gefroren':'Frozen','Schild':'Shield',
+ 'Elite besiegt! Bosstruhe erschienen.':'Elite defeated! A boss chest appeared.','Ausgewichen':'Dodged','Geblockt':'Blocked','Phönixfeder: Wiederbelebt!':'Phoenix Feather: revived!',
+ 'Stacheln':'Spikes','Gift':'Poison',' m · Bosskampf':' m · Boss fight','Der Wächter':'The Warden','Phase ':'Phase ','Dauerhaft freigeschaltet: ':'Permanently unlocked: ',
+ 'Gipfel bezwungen!':'Summit conquered!','Ab jetzt: Endlos-Aufstieg':'From now on: endless climb',' besiegt!':' defeated!','Neuer Höhenrekord!':'New height record!',
+ 'Wächter-Strahl':'Warden beam','Geschoss':'Projectile','Neuer Charakter freigeschaltet: ':'New character unlocked: ','REKORD ':'RECORD ','BOSS ':'BOSS ',
+ 'Fäh.':'Abil.',' <span class="danger">(letzter freier)</span>':' <span class="danger">(last free one)</span>','Build komplett: +25 Münzen':'Build complete: +25 coins',
+ 'Entwicklung!':'Evolution!','Synergie: ':'Synergy: ','Entwicklung bereit: ':'Evolution ready: ','. Nächste Beute, Händler oder Amboss.':'. Next loot, merchant or anvil.',
+ 'Build komplett: +50 Münzen':'Build complete: +50 coins','Bosstruhe':'Boss chest','Einsammeln':'Collect','Erhalten: ':'Received: ',
+ 'Ein uralter Altar verlangt ein Opfer. Gib einen Teil deiner Lebenskraft und erhalte ein mächtiges Item.':'An ancient altar demands a sacrifice. Give up part of your life force and receive a powerful item.',
+ 'Opfern: −25% LP':'Sacrifice: −25% HP','Garantiert episch oder legendär':'Guaranteed epic or legendary','Weitergehen':'Move on','Nichts passiert':'Nothing happens',
+ 'Eine goldene Kiste. Sie flüstert: „Füttere mich.“ Manche Kisten beißen zurück.':'A golden chest. It whispers: “Feed me.” Some chests bite back.',
+ '50%: seltenes Item · 50%: Mimic greift an':'50%: rare item · 50%: a mimic attacks','Es war ein Mimic!':'It was a mimic!','Lieber nicht':'Better not',
+ 'Mitten im Aufstieg':'Halfway up the climb','Wandernder Händler':'Wandering Merchant','Klares Wasser sprudelt aus dem Fels. Du darfst einmal trinken.':'Clear water bubbles out of the rock. You may drink once.',
+ 'Volle Lebenspunkte':'Full HP','+15 max. Lebenspunkte':'+15 max HP','Dauerhaft für diesen Run':'Permanent for this run',
+ 'Violettes Licht pulsiert. Ein Pakt wird angeboten: Macht gegen einen Fluch bis zum nächsten Boss.':'Violet light pulses. A pact is offered: power in exchange for a curse until the next boss.',
+ 'Pakt annehmen: 2 Items':'Accept the pact: 2 items',' bis zum nächsten Boss':' until the next boss','Ablehnen':'Decline','Du bist schon verflucht.':'You are already cursed.','Kein Risiko':'No risk',
+ 'Entwickeln: ':'Evolve: ','Verbessern: ':'Upgrade: ','Nichts zu schmieden':'Nothing to forge','Du hast noch keine Items, die verbessert werden können.':"You don't have any items that can be upgraded yet.",
+ 'Ein Amboss mit glühender Esse. Hier kannst du ein Item um eine Stufe verbessern oder eine Entwicklung schmieden.':'An anvil with a glowing forge. Here you can upgrade an item by one level or forge an evolution.',
+ 'Elite-Gegner! Besiege ihn für eine Bosstruhe.':'Elite enemy! Defeat it for a boss chest.','Schatzader! 8 Sekunden Münzregen, aber Gegner kommen.':'Treasure vein! 8 seconds of coin rain, but enemies are coming.',
+ 'Verband':'Bandage','Heilt 50% LP':'Heals 50% HP','Heiltrank':'Healing potion','Lebenselixier':'Elixir of life','+20 max. LP für diesen Run':'+20 max HP for this run',
+ 'Neu würfeln':'Reroll','Neue Item-Angebote':'New item offers','Entwickeln':'Evolve',' (gratis)':' (free)',' · LP ':' · HP ','Gekauft':'Bought','Slot voll':'Slot full',
+ '<p class="hint">Dein Build ist komplett. Hier gibt es keine Items mehr für dich.</p>':'<p class="hint">Your build is complete. There are no more items for you here.</p>',
+ 'Zone ':'Zone ',' erreicht':' reached','Himmelsfestung: Nur der nächste Block ist sichtbar.':'Sky Fortress: only the next block is visible.',
+ 'Die Giftflut steigt! Bleib in Bewegung.':'The poison flood is rising! Keep moving.','Gift!':'Poison!','Giftflut':'Poison flood',
+ 'Noch keine Einträge. Sei die oder der Erste!':'No entries yet. Be the first!','Lade Bestenliste …':'Loading leaderboard …','Offline-Modus: Bestenliste nur auf diesem Gerät.':'Offline mode: leaderboard on this device only.',
+ 'Du spielst als: ':'Playing as: ','Online-Bestenliste · Top 50 · höchster Score pro Spieler':'Online leaderboard · top 50 · best score per player',
+ 'Server nicht erreichbar. Zeige die Bestenliste dieses Geräts.':"Can't reach the server. Showing this device's leaderboard.",'Bitte mindestens 2 Zeichen eingeben.':'Please enter at least 2 characters.',
+ 'Lokale Bestenliste aktualisiert.':'Local leaderboard updated.','Score wird eingetragen …':'Submitting score …','Score eingetragen.':'Score submitted.',
+ 'Bestenliste gerade nicht erreichbar. Dein Score ist lokal gespeichert.':"Leaderboard unavailable right now. Your score is saved locally.",
+ 'Gipfel bezwungen · ':'Summit conquered · ','Besiegt von: ':'Defeated by: ','<div class="newrec">Neuer Rekord!</div>':'<div class="newrec">New record!</div>',
+ 'Testmodus: kein Eintrag in die Bestenliste.':'Test mode: no leaderboard entry.','Erreichte Höhe':'Height reached','Persönlicher Rekord':'Personal record','Münzen verdient':'Coins earned',
+ 'Beim Händler ausgegeben':'Spent at merchant','Gegner besiegt':'Enemies defeated','Bosse besiegt':'Bosses defeated','Höchster Treffer':'Highest hit','Gesamtschaden':'Total damage','keine':'none',
+ 'Testmodus aktiv: Rekord und Münzen werden nicht gespeichert':'Test mode active: record and coins are not saved','Teleport · Zone ':'Teleport · Zone ','Unverwundbar: ':'Invincible: ',
+ 'Das nächste Ereignis erscheint gleich über dir.':'The next event will appear just above you.','Alle Charaktere freigeschaltet (dauerhaft)':'All characters unlocked (permanently)',
+ 'Aufgegeben':'Gave up','Ton: ':'Sound: ','Bildschirmwackeln: ':'Screen shake: ','an':'on','aus':'off',
+ '<p class="hint">Alle Items sind freigeschaltet.</p>':'<p class="hint">All items are unlocked.</p>','Zurück zu den Truhen':'Back to the chests',
+ 'Geheimer Charakter':'Secret character',' LP':' HP','Wer den Gipfel bezwingt, erfährt mehr.':'Conquer the summit to learn more.','Ausgewählt':'Selected',
+ 'Freigeschaltet: antippen zum Auswählen':'Unlocked: tap to select','Gesperrt · Aufgabe: ':'Locked · Task: ','<span class="hint">Keine Synergie im Pool möglich</span>':'<span class="hint">No synergy possible in this pool</span>',
+ 'Gesperrt':'Locked',' · max. Stufe ':' · max level ','Öffne Truhen oder besiege einen Boss zum ersten Mal, um dieses Item freizuschalten.':'Open chests or defeat a boss for the first time to unlock this item.',
+ '<h3>Entwicklungen</h3>':'<h3>Evolutions</h3>','Runs gespielt':'Runs played','Spielstand gelöscht':'Save data deleted',
+ '<span class="danger">Wirklich löschen? Erneut klicken</span>':'<span class="danger">Really delete? Click again</span>','<p class="hint">Noch keine Items in diesem Run.</p>':'<p class="hint">No items in this run yet.</p>',
+ 'Ton ':'Sound ',
+ // Template-Bausteine
+ 'Freier':'Free','Stufe':'Level','Neu':'New','Wähle mit':'Choose with','Aktiviert Synergie:':'Activates synergy:','Entwicklung':'Evolution','gibt einen Slot frei':'frees up a slot',
+ 'Öffnen:':'Open:','Heilt auf':'Heals to','Bestenliste: Platz':'Leaderboard: place','von':'of','dein Bestwert:':'your best:','Freigeschaltet':'Unlocked','Leeren':'Clear','im Pool':'in pool',
+ 'mindestens':'at least','Pool voll':'Pool full','Entferne zuerst ein Item.':'Remove an item first.','Items freigeschaltet. Tippe ein Item für Details.':'items unlocked. Tap an item for details.','(max.)':'(max)',
+ 'Sprache':'Language',
+};
+const CAT_EN={Offensiv:'Offense',Defensiv:'Defense',Wirtschaft:'Economy',Bewegung:'Movement',Element:'Element',Waffe:'Weapon',Spezial:'Special',Feuer:'Fire',Gift:'Poison',Blitz:'Lightning',Eis:'Ice',Krit:'Crit','Glück':'Luck',Allround:'All-round',Entwicklung:'Evolution'};
+const EN_DATA={
+ zones:['Rocky Depths','Forgotten Ruins','Toxic Heights','Storm Region','Inferno Zone','Sky Fortress'],
+ rar:['Common','Rare','Epic','Legendary','Evolution'],
+ slot:{f:'Ability',w:'Stat'},
+ items:{kraft:['Power Ring','+25% damage for all attacks.'],scharf:['Whetstone','+8% critical hit chance.'],zug:['Tension Spring','+18% attack speed.'],herz:['Heart Crystal','+25 max HP and instantly heals 25 HP.'],
+  panzer:['Armor Plate','Damage taken −12%.'],magnet:['Gold Magnet','Coins fly to you from further away. +10% coins.'],feder:['Feather Boots','+8% jump height and faster sideways movement.'],
+  gift:['Poison Slime','+20% chance to poison enemies. Poison stacks up to 5 times.'],doppel:['Double Shot','+1 projectile per volley.'],
+  kaefer:['Spark Beetle','A beetle companion fires chain lightning that jumps to up to 3 enemies. Each level: +1 jump, more damage.'],kern:['Jump Core','Every landing creates a shockwave that hits nearby enemies.'],
+  pfennig:['Lucky Penny','+25% coins. Enemies drop extra coins more often.'],spule:['Storm Coil','+15% attack speed. With Spark Beetle, lightning fires twice as often.'],glut:['Ember Crystal','Hits explode in flames and set enemies on fire.'],
+  bolzen:['Piercing Bolt','Projectiles pierce one more enemy.'],blut:['Blood Seal','Heals 2 HP per defeated enemy.'],schatten:['Shadow Helm','+12% dodge. Every dodge is followed by a critical counterattack.'],
+  sucher:['Seeker','Projectiles home in on their target.'],runen:['Rune Shield','Regularly blocks one hit completely (every 10 s, level 2: every 7 s).'],seuche:['Plague Heart','Poison is 50% stronger. Poisoned enemies infect nearby enemies when they die.'],
+  gewitter:['Chain Storm','Every critical hit triggers chain lightning.'],stern:['Star Leap','Every jump fires 6 projectiles in a ring.'],phoenix:['Phoenix Feather','Once per run: instead of dying, you get back up with 50% HP.'],
+  klingen:['Blade Ring','Blades orbit you and cut enemies on contact. Level 1: 2 blades, +1 per level.'],feuerball:['Fireball','Throws a fireball every 2.4 s that explodes on impact and sets enemies on fire.'],
+  giftnebel:['Poison Mist','Every 3 s you release a poison cloud that poisons nearby enemies several times.'],ueberladung:['Overload','Every 5th shot triggers chain lightning (level 2: every 4th, level 3: every 3rd).'],
+  frost:['Frost Core','+20% chance to freeze enemies: they slow down and take +25% damage.'],dornen:['Thorn Armor','When you get hit, thorns shoot in all directions and hurt nearby enemies.'],
+  drohne:['Combat Drone','A drone follows you and shoots on its own. Each level: one more drone.'],echo:['Echo Blade','Critical hits have a 35% chance (level 2: 60%) to instantly hit a second target.'],
+  meteor:['Meteor Boots','Every 4th jump (level 2: every 3rd) ends in a meteor impact with large area damage.'],doppelsprung:['Cloud Boots','Double jump: press W, ↑ or Space in mid-air for a second jump.'],
+  inferno:['Inferno Heart','Burning enemies explode on death and set everything nearby on fire.'],midas:['Midas Crown','Double coins. Every 25th coin collected unleashes a gold rain of 8 projectiles.'],
+  fernglas:['Spyglass','+20% range and +15% projectile speed.'],quell:['Life Spring','Regenerates 0.5 HP per second.'],gier:['Gold Greed','+1% damage per 10 coins you carry this run (max. +30% per level).'],
+  vampir:['Vampire Fang','2% of the damage you deal heals you.'],zorn:['Berserker Rage','Up to +30% damage the lower your HP.'],henker:["Executioner's Axe",'+35% critical damage.'],
+  klee:['Four-Leaf Clover','Rare items appear more often, power-ups 50% more often.'],titan:['Titan Blood','+50 max HP and −8% damage taken.'],
+  adrenalin:['Adrenaline','Each kill grants +5% attack speed for 4 s, stacks up to 10 times (level 2: 16 times).'],adler:['Eagle Eye','+15% crit chance and +15% range.'],
+  karte:['Treasure Map','Loot chests appear 35% more often and offer 4 instead of 3 choices.'],wille:['Iron Will','Below 30% HP: −40% damage taken and +1.5 HP per second.'],
+  goetter:['God Blood','+25% damage, +25% attack speed, +25 max HP and +5% crit chance.'],zeit:['Time Crystal','All enemies, bosses and enemy projectiles are 25% slower.'],
+  glas:['Glass Cannon','+80% damage, but −40% max HP.'],fortuna:["Fortune's Favor",'Power-ups appear 3 times as often and last 50% longer.'],
+  gewittergott:['Storm God','Three Spark Beetles follow you. Their chain lightning jumps through entire enemy groups and hits harder.'],
+  sonnenkern:['Sun Core','A mini sun orbits you and burns everything it touches. Meteors regularly strike enemies.'],
+  seuchenwolke:['Plague Cloud','A permanent poison aura surrounds you. Poisoned enemies explode on death and infect others.'],
+  sturmklingen:['Storm Blades','Your blades fly at enemies like boomerangs, cut through everything and return to you.'],
+  erdbrecher:['Earthbreaker','Every landing is a meteor impact with huge area damage.'],traeger:['Drone Carrier','Two extra drones. Each drone fires three shots at once.'],
+  eiszeit:['Ice Age','+20% freeze chance. Critical hits shatter frozen enemies below 25% HP instantly.'],titanenherz:['Titan Heart','+100 max HP. A shield that blocks one hit renews every 5 seconds.']},
+ presets:{blitz:'Lightning',feuer:'Fire',gift:'Poison',eis:'Ice',krit:'Crit',def:'Defense',sprung:'Jump',gold:'Gold'},
+ syn:{gewitterkern:['Thunder Core','Lightning fires twice as often'],pestbrand:['Plague Fire','Burning and poisoned enemies take +40% damage'],schockblitz:['Shock Storm','Shockwaves trigger chain lightning'],
+  schattenklinge:['Shadow Blade','Critical damage +50%'],goldrausch:['Gold Rush','+1 coin per defeated enemy'],feuersturm:['Firestorm','Fireballs fly twice as often'],
+  thermoschock:['Thermal Shock','Frozen, burning enemies take +60% instead of +25% damage'],splitterfrost:['Shatter Frost','Crits against frozen enemies deal +50% damage'],
+  drohnenschwarm:['Drone Swarm','Drones fire two shots'],blutrausch:['Blood Frenzy','Below 50% HP, Vampire Fang heals twice as much'],meteorsturm:['Meteor Storm','Meteor impact on every 2nd jump'],
+  klingenwirbel:['Blade Whirl','Blades spin faster and hit more often'],scharfschuetze:['Sharpshooter','Projectiles pierce +1 enemy'],bollwerk:['Bulwark','Another −10% damage taken'],kriegsrausch:['War Frenzy','Adrenaline stacks last twice as long']},
+ chests:{holz:'Wooden Chest',magie:'Magic Chest',legend:'Legendary Chest'},
+ enemies:{slime:'Slimeling',bat:'Cave Flutter',shooter:'Spewer',mimic:'Mimic',tank:'Rock Shell',shaman:'Rune Caller',spitter:'Poison Spitter',charger:'Storm Ram'},
+ bosses:{golem:'Stone Golem',ooze:'Toxic Ooze',hunter:'Sky Hunter',thunder:'Thunder Colossus',beast:'Inferno Beast',warden:'The Warden'},
+ pu:{magnet:'Super Magnet',schild:'Invincible',doppelt:'Double Coins',raserei:'Frenzy',rakete:'Rocket Jump'},
+ chars:{abenteurer:['Adventurer','Slingshot','Shoots stones at the nearest enemy.','Balanced, no weaknesses.','Available from the start'],
+  funken:['Spark Mage','Lightning Staff','Chain lightning that jumps to 3 enemies.','Lightning items appear twice as often. Only 80 HP.','Defeat the Thunder Colossus.'],
+  schmied:['Blacksmith','Boomerang Hammer','Throws a hammer that smashes through everything and comes back.','Landings create small shockwaves. 120 HP, but slower.','Defeat the Stone Golem 3 times.'],
+  alchemist:['Alchemist','Poison Flasks','Throws flasks in an arc that release a poison cloud on impact.','Poison lasts twice as long.','Defeat the Sky Hunter without touching the poison flood.'],
+  schatten:['Shadow Runner','Throwing Daggers','Very fast daggers with a high crit chance.','+15% dodge, +15% crit. Only 60 HP.','Reach 1,500 m without getting hit.'],
+  pyro:['Pyromaniac','Flamethrower','Short range, but a constant stream that sets enemies on fire.','Burning platforms last twice as long for him.','Defeat the Inferno Beast.'],
+  gluck:['Fortune Knight','Coin Toss','Throws coins. Damage grows with the coins you carry this run.','25% discount at the merchant.','Collect 3,000 coins in total.'],
+  akrobat:['Acrobat','Jump Volleys','No weapon: every jump fires a ring of projectiles.','Double jump from the start, jumps higher.','Reach 2,000 m in under 3 minutes.'],
+  waechter:['Warden Shard','Prism Laser','A continuous beam that burns the nearest enemy.','The legacy of the final boss.','Defeat the Warden.']},
+ events:{altar:'Blood Altar',gier:'Chest of Greed',haendler:'Wandering Merchant',quelle:'Healing Spring',schrein:'Cursed Shrine',amboss:'Anvil',portal:'Elite Portal',ader:'Treasure Vein'},
+ curses:{hast:['Curse of Haste','Enemies are 35% faster'],bruch:['Curse of Fragility','You take 25% more damage']},
+};
+function tr(s){return LANG==='en'&&EN_TXT[s]!=null?EN_TXT[s]:s}
+function setL(o,f,en){o._de=o._de||{};if(!(f in o._de))o._de[f]=o[f];o[f]=(LANG==='en'&&en!=null)?en:o._de[f]}
+function applyLangData(){
+ const E=LANG==='en';
+ ZONES.forEach((z,i)=>setL(z,'name',EN_DATA.zones[i]));
+ RAR.forEach((r,i)=>setL(r,'n',EN_DATA.rar[i]));
+ setL(SLOT_N,'f',EN_DATA.slot.f);setL(SLOT_N,'w',EN_DATA.slot.w);
+ const itemObjs=[...ITEMS,...EVOS,...EVOS.map(e=>IT[e.id])];
+ for(const it of itemObjs){const d=EN_DATA.items[it.id];setL(it,'name',d&&d[0]);setL(it,'d',d&&d[1]);if('cat' in it){it._de=it._de||{};if(!('cat' in it._de))it._de.cat=it.cat;it.cat=E?(CAT_EN[it._de.cat]||it._de.cat):it._de.cat}}
+ PRESETS.forEach(p=>setL(p,'name',EN_DATA.presets[p.id]));
+ SYN.forEach(s=>{const d=EN_DATA.syn[s.id];setL(s,'name',d&&d[0]);setL(s,'d',d&&d[1])});
+ CHESTS.forEach(c=>setL(c,'name',EN_DATA.chests[c.id]));
+ for(const k in EN)setL(EN[k],'name',EN_DATA.enemies[k]);
+ BOSSES.forEach(b=>setL(b,'name',EN_DATA.bosses[b.type]));
+ for(const k in PU)setL(PU[k],'name',EN_DATA.pu[k]);
+ CHARS.forEach(c=>{const d=EN_DATA.chars[c.id]||[];['name','weapon','wd','pd','task'].forEach((f,i)=>setL(c,f,d[i]))});
+ for(const k in EVENTS)setL(EVENTS[k],'name',EN_DATA.events[k]);
+ for(const k in CURSES){const d=EN_DATA.curses[k];setL(CURSES[k],'name',d&&d[0]);setL(CURSES[k],'d',d&&d[1])}
+}
+// Statische HTML-Texte (Textknoten und einige Attribute) übersetzen
+const I18N_ORIG=new WeakMap();
+function translateStatic(root){
+ const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+ while((n=w.nextNode())){
+  let o=I18N_ORIG.get(n);
+  if(o===undefined){const t=n.nodeValue.trim();if(!t||EN_TXT[t]==null){I18N_ORIG.set(n,null);continue}o=n.nodeValue;I18N_ORIG.set(n,o)}
+  if(o===null)continue;
+  const t=o.trim();n.nodeValue=LANG==='en'?o.replace(t,EN_TXT[t]):o;
+ }
+ root.querySelectorAll('[placeholder],[aria-label]').forEach(el=>{for(const a of['placeholder','aria-label']){if(!el.hasAttribute(a))continue;const k='i18n'+a.replace('-','');if(el.dataset[k]==null)el.dataset[k]=el.getAttribute(a);const o=el.dataset[k];el.setAttribute(a,tr(o))}});
+}
+function applyLang(lang){
+ if(lang)LANG=lang;document.documentElement.lang=LANG;
+ applyLangData();translateStatic(document.getElementById('stage'));
+ if(typeof hudCache!=='undefined')hudCache={};
+}
+
 /* ================= CONSTANTS ================= */
 const W=480,H=800,PXM=20,GRAV=2050;
 const stage=document.getElementById('stage'),cv=document.getElementById('cv'),ctx=cv.getContext('2d');
@@ -585,7 +757,7 @@ function bossDef(i){const b=BOSSES[i];if(!b)return null;return{...b,h:BOSS_H[i],
 
 /* ================= SAVE ================= */
 const SAVE_KEY='lootjumper.save.v1';
-const DEFAULT_SAVE=()=>({char:'abenteurer',chars:['abenteurer'],bossCount:{},totalCoins:0,name:'',pid:'',localBoard:[],coins:0,record:0,unlocked:START_UNLOCKED.slice(),bosses:0,bossFirst:{},runs:0,kills:0,sound:true,shake:true,musVol:60,sfxVol:80,pool:START_UNLOCKED.slice(0,POOL_MAX)});
+const DEFAULT_SAVE=()=>({lang:((navigator.language||'de').toLowerCase().startsWith('de')?'de':'en'),char:'abenteurer',chars:['abenteurer'],bossCount:{},totalCoins:0,name:'',pid:'',localBoard:[],coins:0,record:0,unlocked:START_UNLOCKED.slice(),bosses:0,bossFirst:{},runs:0,kills:0,sound:true,shake:true,musVol:60,sfxVol:80,pool:START_UNLOCKED.slice(0,POOL_MAX)});
 let save=DEFAULT_SAVE();
 function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(s)save=Object.assign(DEFAULT_SAVE(),s)}catch(e){}for(const id of START_UNLOCKED)if(!save.unlocked.includes(id))save.unlocked.push(id);if(!Array.isArray(save.chars))save.chars=['abenteurer'];if(!save.chars.includes('abenteurer'))save.chars.unshift('abenteurer');save.unlocked=save.unlocked.filter(id=>IT[id]);save.pool=validPool(save.pool)}
 function validPool(pool){let p=(pool||[]).filter(id=>IT[id]&&save.unlocked.includes(id)).slice(0,POOL_MAX);
@@ -776,7 +948,7 @@ function newRun(){
  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
  setScreen(null);state='play';
  $('hud').hidden=false;
- showBanner('Zone 1',ZONES[0].name);
+ showBanner(tr('Zone 1'),ZONES[0].name);
  hudCache={};
 }
 
@@ -809,7 +981,7 @@ function lightningStrike(pl){
  ring(cx,pl.y,70,C.bolt,.35);burst(cx,pl.y,C.bolt,22,280,4);shake(6);
  noise(.35,.12,400);beep(90,.35,'sawtooth',.06,-40);
  G.flash=.12;pl.shock=.7;
- if(Math.abs(p.x-cx)<pl.w/2+26&&p.y>pl.y-110&&p.y<pl.y+30)hurt(18,'Blitzschlag');
+ if(Math.abs(p.x-cx)<pl.w/2+26&&p.y>pl.y-110&&p.y<pl.y+30)hurt(18,tr('Blitzschlag'));
  for(const e of G.enemies)if(!e.dead&&dist2(e.x,e.y,cx,pl.y)<70*70)applyDamage(e,40,false);
 }
 function jagLong(x1,y1,x2,y2){const pts=[[x1,y1]],n=12;for(let i=1;i<n;i++){const t=i/n;pts.push([lerp(x1,x2,t)+rand(-16,16),lerp(y1,y2,t)])}pts.push([x2,y2]);return pts}
@@ -913,7 +1085,7 @@ const PU={
 };
 function activatePU(type){const p=G.p,u=PU[type];
  if(type==='rakete'){p.vy=-2700;G.pu.schild=Math.max(G.pu.schild,1.6)}else G.pu[type]=u.dur*(st.fortuna?1.5:1);
- ring(p.x,p.y-16,70,u.col,.5);burst(p.x,p.y-16,u.col,24,260,5);SFX.powerup();toast('Power-up: '+u.name,'gold');
+ ring(p.x,p.y-16,70,u.col,.5);burst(p.x,p.y-16,u.col,24,260,5);SFX.powerup();toast(tr('Power-up: ')+u.name,'gold');
 }
 function fireballBoom(x,y,dmg){const Rr=75;ring(x,y,Rr,C.fire,.4);burst(x,y,C.fire,18,260,5);SFX.boom();
  for(const e of liveTargets())if(dist2(e.x,e.y,x,y)<(Rr+e.r)**2){onHit(e,dmg,{noFire:true});e.burn.t=3;e.burn.dps=Math.max(e.burn.dps,5+2*st.glut)}}
@@ -938,8 +1110,8 @@ function onHit(e,base,opt){
    e.burn.t=2.5;e.burn.dps=Math.max(e.burn.dps,4*st.glut);
   }
   if(crit&&st.gewitter&&!opt.noChain)chain(e.x,e.y,dmg*.6,3,null,e);
-  if(st.eiszeit&&crit&&e.slow>0&&!e.isBoss&&!e.dead&&e.hp<e.maxHp*.25){text(e.x,e.y-e.r-14,'Zersplittert!','#bfe6ff',15,.8);burst(e.x,e.y,'#dff4ff',20,260,5);applyDamage(e,e.hp+1,false,true)}
-  if(st.frost&&!e.dead&&Math.random()<st.frost){if(!(e.slow>0))text(e.x,e.y+e.r+12,'Gefroren','#bfe6ff',10,.5);e.slow=2.2}
+  if(st.eiszeit&&crit&&e.slow>0&&!e.isBoss&&!e.dead&&e.hp<e.maxHp*.25){text(e.x,e.y-e.r-14,tr('Zersplittert!'),'#bfe6ff',15,.8);burst(e.x,e.y,'#dff4ff',20,260,5);applyDamage(e,e.hp+1,false,true)}
+  if(st.frost&&!e.dead&&Math.random()<st.frost){if(!(e.slow>0))text(e.x,e.y+e.r+12,tr('Gefroren'),'#bfe6ff',10,.5);e.slow=2.2}
   if(crit&&st.echo&&!opt.noEcho&&Math.random()<st.echo){const o=nearest(e.x,e.y,320,new Set([e]));if(o){G.bolts.push({pts:jag(e.x,e.y,o.x,o.y),life:.15,max:.15,col:C.violet});onHit(o,base,{noEcho:true,noChain:true})}}
  }
 }
@@ -948,7 +1120,7 @@ function applyDamage(e,dmg,crit,quiet){
  if(st.syn.pestbrand&&e.burn.t>0&&e.poison.t>0)dmg*=1.4;
  if(e.slow>0)dmg*=(st.syn.thermoschock&&e.burn.t>0)?1.6:1.25;
  if(st.vamp){const p=G.p;G.vampAcc+=dmg*st.vamp*(st.syn.blutrausch&&p.hp<p.maxHp*.5?2:1);if(G.vampAcc>=1){const hl=Math.floor(G.vampAcc);G.vampAcc-=hl;p.hp=Math.min(p.maxHp,p.hp+hl)}}
- if(e.shield>0){const a=Math.min(e.shield,dmg);e.shield-=a;dmg-=a;if(dmg<=0){text(e.x,e.y-e.r,'Schild','#8fe9ff',11,.5);return}}
+ if(e.shield>0){const a=Math.min(e.shield,dmg);e.shield-=a;dmg-=a;if(dmg<=0){text(e.x,e.y-e.r,tr('Schild'),'#8fe9ff',11,.5);return}}
  e.hp-=dmg;e.flash=.08;G.dmgDealt+=dmg;if(dmg>G.maxHit)G.maxHit=dmg;
  if(!quiet)text(e.x+rand(-8,8),e.y-e.r-4,Math.round(dmg)+(crit?'!':''),crit?C.gold:'#ffffff',crit?20:13,crit?.9:.6);
  if(e.hp<=0)kill(e);
@@ -969,7 +1141,7 @@ function jag(x1,y1,x2,y2){const pts=[[x1,y1]],n=6;for(let i=1;i<n;i++){const t=i
 function kill(e){
  if(e.isBoss){bossDefeated();return}
  e.dead=true;G.kills++;
- if(e.elite){G.chests.push({x:e.x,y:e.y+14,pl:null,ox:0,t:0,boss:true});toast('Elite besiegt! Bosstruhe erschienen.','gold')}
+ if(e.elite){G.chests.push({x:e.x,y:e.y+14,pl:null,ox:0,t:0,boss:true});toast(tr('Elite besiegt! Bosstruhe erschienen.'),'gold')}
  if(st.adrenMax){G.adren=Math.min(st.adrenMax,(G.adren||0)+1);G.adrenT=4*(st.syn.kriegsrausch?2:1)}
  burst(e.x,e.y,e.col,14,220,5);SFX.kill();
  let n=e.coin;if(Math.random()<st.extraCoinChance)n++;if(st.syn.goldrausch)n++;
@@ -984,11 +1156,11 @@ function hurt(dmg,cause){
  const p=G.p;if(p.inv>0||state!=='play'||G.god)return;
  if(G.pu.schild>0)return;
  if(st.dodge&&Math.random()<st.dodge){
-  text(p.x,p.y-46,'Ausgewichen',C.violet,13,.7);p.inv=.45;
+  text(p.x,p.y-46,tr('Ausgewichen'),C.violet,13,.7);p.inv=.45;
   const t=nearest(p.x,p.y,360);if(t){G.bolts.push({pts:jag(p.x,p.y-18,t.x,t.y),life:.15,max:.15,col:C.violet});onHit(t,st.dmg*1.5,{forceCrit:true})}
   return;
  }
- if(p.shieldReady){p.shieldReady=false;p.shieldT=st.shieldCd;p.inv=.6;ring(p.x,p.y-16,34,'#8fe9ff',.4);text(p.x,p.y-46,'Geblockt','#8fe9ff',13,.7);SFX.block();return}
+ if(p.shieldReady){p.shieldReady=false;p.shieldT=st.shieldCd;p.inv=.6;ring(p.x,p.y-16,34,'#8fe9ff',.4);text(p.x,p.y-46,tr('Geblockt'),'#8fe9ff',13,.7);SFX.block();return}
  G.hitTaken=true;dmg*=st.dmgTaken;if(G.curse&&G.curse.type==='bruch')dmg*=1.25;if(st.wille&&p.hp<p.maxHp*.3)dmg*=.6;p.hp-=dmg;p.inv=1;shake(9);SFX.hurt();
  if(st.dornen){const Rr=150;ring(p.x,p.y-16,Rr,C.coral,.35);for(let i=0;i<10;i++){const a=i/10*Math.PI*2;G.parts.push({x:p.x,y:p.y-16,vx:Math.cos(a)*420,vy:Math.sin(a)*420,life:.3,max:.3,col:'#ffb3a8',size:4})}
   for(const e of liveTargets())if(dist2(e.x,e.y,p.x,p.y-16)<(Rr+e.r)**2)onHit(e,st.dmg*(1.5+1.2*st.dornen),{noFire:true})}
@@ -999,7 +1171,7 @@ function tryRevive(){
  const p=G.p;if(!p.revive)return false;
  p.revive=false;delete G.items.phoenix;p.hp=Math.round(p.maxHp*.5);p.inv=2.2;p.vy=-st.jumpV*1.9;
  if(p.y>G.camY+H-20)p.y=G.camY+H-20;
- ring(p.x,p.y-16,90,C.gold,.7);burst(p.x,p.y-16,C.gold,40,320,6);SFX.legend();toast('Phönixfeder: Wiederbelebt!','gold');
+ ring(p.x,p.y-16,90,C.gold,.7);burst(p.x,p.y-16,C.gold,40,320,6);SFX.legend();toast(tr('Phönixfeder: Wiederbelebt!'),'gold');
  return true;
 }
 
@@ -1012,10 +1184,10 @@ function land(pl){
  if(pl.chain&&pl.chain>=G.chainCur){if(pl.chain>G.chainCur)beep(880,.12,'sine',.03,440);G.chainCur=pl.chain}
  if(st.meteor){const every=st.erdbrecher?1:st.syn.meteorsturm?2:(st.meteor>1?3:4);if(G.jumpN%every===0){const Rr=170;ring(p.x,p.y,Rr,C.fire,.5);ring(p.x,p.y,Rr*.6,'#ffe6a6',.35);burst(p.x,p.y,C.fire,26,340,6);shake(7);SFX.boom();
   for(const e of liveTargets())if(dist2(e.x,e.y,p.x,p.y)<(Rr+e.r)**2)onHit(e,st.dmg*4,{noFire:true})}}
- if(pl.type==='hazard'){hurt(10,'Stacheln');}
+ if(pl.type==='hazard'){hurt(10,tr('Stacheln'));}
  if(pl.type==='burn'&&!(pl.burning>0)){pl.burning=CHR().id==='pyro'?1.1:.55;pl.burnMax=pl.burning;burst(pl.x+pl.w/2,pl.y,C.fire,10,150,4);beep(260,.18,'sawtooth',.03,-180)}
- if(pl.shock>0){hurt(12,'Blitzschlag');G.bolts.push({pts:jag(pl.x,pl.y,pl.x+pl.w,pl.y),life:.15,max:.15})}
- if(pl.poison>0){hurt(10,'Gift');burst(p.x,p.y,C.poison,8,140,3)}
+ if(pl.shock>0){hurt(12,tr('Blitzschlag'));G.bolts.push({pts:jag(pl.x,pl.y,pl.x+pl.w,pl.y),life:.15,max:.15})}
+ if(pl.poison>0){hurt(10,tr('Gift'));burst(p.x,p.y,C.poison,8,140,3)}
  if(pl.type==='fragile'&&!pl.breaking){pl.breaking=true;burst(pl.x+pl.w/2,pl.y+6,'#8b6a4a',10,120,4)}
  burst(p.x,p.y,'rgba(255,255,255,.6)',4,80,2.5);
  if(st.kern&&G.kernT<=0){
@@ -1048,7 +1220,7 @@ function startBoss(){
  G.boss={isBoss:true,type:def.type,name:def.name,hp:def.hp,maxHp:def.hp,x:W/2,y:lockY-140,ty:lockY+165,r:def.r,t:0,atk:2.2,state:'enter',vx:110,
   poison:{t:0,stacks:0},burn:{t:0,dps:0},shield:0,flash:0,dotAcc:0,dotShown:0,dead:false,coin:def.coin,cyc:def.cyc,col:'#fff',mode:'idle',burstN:0,burstT:0,dash:null,final:!!def.final,phase:1,spiral:0,breath:0,breathT:0};
  $('bN').textContent=def.name;$('bossbar').hidden=false;
- showBanner(Math.round(def.h)+' m · Bosskampf',def.name);SFX.boss();shake(14);
+ showBanner(Math.round(def.h)+tr(' m · Bosskampf'),def.name);SFX.boss();shake(14);
 }
 function bossTelegraphCols(xs,delay,kind){for(const x of xs)G.warns.push({kind:'col',x:clamp(x,24,W-24),w:46,t:delay,max:delay,then:kind})}
 function updateBoss(dt){
@@ -1117,7 +1289,7 @@ function updateBoss(dt){
    b.atk=ph2?1.3:1.9}}
  }else if(b.type==='warden'){
   const ph=b.hp>b.maxHp*.66?1:b.hp>b.maxHp*.33?2:3;
-  if(ph!==b.phase){b.phase=ph;showBanner('Der Wächter','Phase '+ph);G.flash=.25;shake(10);SFX.boss();G.eshots=[];b.atk=1.2}
+  if(ph!==b.phase){b.phase=ph;showBanner(tr('Der Wächter'),tr('Phase ')+ph);G.flash=.25;shake(10);SFX.boss();G.eshots=[];b.atk=1.2}
   b.x=W/2+Math.sin(b.t*.5)*90;b.y=b.ty+Math.sin(b.t*1.3)*10;
   if(b.spiral>0){b.spiral-=dt;b.spT=(b.spT||0)-dt;if(b.spT<=0){b.spT=.07;const a0=b.t*3.2;for(let k=0;k<2;k++)eshot(b.x,b.y,a0+k*Math.PI,200,11,7,'#d9c8ff')}}
   b.atk-=dt;if(b.atk<=0){const r=Math.random();
@@ -1144,19 +1316,19 @@ function bossDefeated(){
  if(!G.test){save.bossCount=save.bossCount||{};save.bossCount[b.type]=(save.bossCount[b.type]||0)+1;if(b.type==='hunter'&&!G.tideTouched)unlockChar('alchemist')}
  if(!save.bossFirst[b.type]){
   save.bossFirst[b.type]=true;const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
-  if(locked.length){const it=pick(locked);save.unlocked.push(it.id);setTimeout(()=>toast('Dauerhaft freigeschaltet: '+it.name,'gold'),900)}
+  if(locked.length){const it=pick(locked);save.unlocked.push(it.id);setTimeout(()=>toast(tr('Dauerhaft freigeschaltet: ')+it.name,'gold'),900)}
  }
  persist();if(!G.test)checkCharUnlocks();
  G.boss=null;G.arena=null;G.bossIdx++;G.warns=[];G.beams=[];G.wind=null;G.chainCur=null;G.chainX=null;G.chainNext=null;
  if(G.curse){toast(CURSES[G.curse.type].name+' ist aufgehoben.');G.curse=null}
- if(b.final){G.won=true;save.wins=(save.wins||0)+1;persist();setTimeout(()=>showBanner('Gipfel bezwungen!','Ab jetzt: Endlos-Aufstieg'),300)}
+ if(b.final){G.won=true;save.wins=(save.wins||0)+1;persist();setTimeout(()=>showBanner(tr('Gipfel bezwungen!'),tr('Ab jetzt: Endlos-Aufstieg')),300)}
  if(G.zone<ZONES.length-1){G.zoneFrom=G.zone;G.zone++;G.zoneT=0;G.zoneBanner=true}
  Music.set('run');
  let top=Infinity;for(const pl of G.platforms)if(pl.alive)top=Math.min(top,pl.y);
  G.nextY=top;
  $('bossbar').hidden=true;
  G.pendingLoot=1.6;G.pendingBias='boss';
- toast(b.name+' besiegt!','gold');
+ toast(b.name+tr(' besiegt!'),'gold');
 }
 
 /* ================= DOTS ================= */
@@ -1215,14 +1387,14 @@ function update(dt){
  else{const target=p.y-H*.42;if(target<G.camY)G.camY=lerp(G.camY,target,Math.min(1,dt*12))}
  // height
  const h=heightAt(p.y);
- if(h>G.maxH){G.maxH=h;if(!G.test){if(G.maxH>=1500&&!G.hitTaken)unlockChar('schatten');if(G.maxH>=2000&&G.t<180)unlockChar('akrobat')}if(!G.recBeaten&&save.record>20&&G.maxH>save.record){G.recBeaten=true;toast('Neuer Höhenrekord!','gold');SFX.record()}}
+ if(h>G.maxH){G.maxH=h;if(!G.test){if(G.maxH>=1500&&!G.hitTaken)unlockChar('schatten');if(G.maxH>=2000&&G.t<180)unlockChar('akrobat')}if(!G.recBeaten&&save.record>20&&G.maxH>save.record){G.recBeaten=true;toast(tr('Neuer Höhenrekord!'),'gold');SFX.record()}}
  if(G.zoneT<1)G.zoneT=Math.min(1,G.zoneT+dt/2.5);
  if(!G.arena&&!G.boss&&bossDef(G.bossIdx)&&G.maxH>=bossDef(G.bossIdx).h)startBoss();
  // generation
  if(!G.arena)while(G.nextY>G.camY-240)genRow();
  // death by fall
  if(G.god&&p.y>G.camY+H-20&&p.vy>0){p.vy=-st.jumpV*1.6;ring(p.x,p.y,40,'#8fe9ff',.3)}
- if(p.y>G.camY+H+50){if(tryRevive()){p.y=G.camY+H-10}else{die('Abgestürzt');return}}
+ if(p.y>G.camY+H+50){if(tryRevive()){p.y=G.camY+H-10}else{die(tr('Abgestürzt'));return}}
 
  // platforms
  for(const pl of G.platforms){
@@ -1297,7 +1469,7 @@ function update(dt){
   }
  }
  G.warns=G.warns.filter(w=>!w.done);
- for(const bm of G.beams){bm.life-=dt;const hit=bm.kind==='h'?Math.abs(p.y-16-bm.y)<20:Math.abs(p.x-bm.x)<26;if(hit&&bm.life>.05)hurt(20,'Wächter-Strahl')}
+ for(const bm of G.beams){bm.life-=dt;const hit=bm.kind==='h'?Math.abs(p.y-16-bm.y)<20:Math.abs(p.x-bm.x)<26;if(hit&&bm.life>.05)hurt(20,tr('Wächter-Strahl'))}
  if(G.beams.length)G.beams=G.beams.filter(bm=>bm.life>0);
  if(G.wind&&G.wind.t>0){G.wind.t-=dt;p.x+=G.wind.dir*290*dt;if(Math.random()<.6)G.parts.push({x:G.wind.dir>0?0:W,y:G.camY+rand(0,H),vx:G.wind.dir*900,vy:0,life:.5,max:.5,col:'#cfe3ff',size:2})}
 
@@ -1306,7 +1478,7 @@ function update(dt){
  for(const s of G.eshots){
   if(s.home){const a=Math.atan2(p.y-16-s.y,p.x-s.x),cur=Math.atan2(s.vy,s.vx);let da=a-cur;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;const na=cur+clamp(da,-2.4*dt,2.4*dt);s.vx=Math.cos(na)*s.sp;s.vy=Math.sin(na)*s.sp}
   s.x+=s.vx*esd;s.y+=s.vy*esd;s.life-=dt;
-  if(dist2(s.x,s.y,p.x,p.y-16)<(s.r+11)**2){hurt(s.dmg,'Geschoss');s.life=0;burst(s.x,s.y,s.col,6,140,3)}
+  if(dist2(s.x,s.y,p.x,p.y-16)<(s.r+11)**2){hurt(s.dmg,tr('Geschoss'));s.life=0;burst(s.x,s.y,s.col,6,140,3)}
   if(s.y>G.camY+H+60||s.y<G.camY-80||s.x<-40||s.x>W+40)s.life=0}
  G.eshots=G.eshots.filter(s=>s.life>0);
 
@@ -1368,7 +1540,7 @@ const CHARS=[
 const CH_BY=Object.fromEntries(CHARS.map(c=>[c.id,c]));
 function CHR(){return CH_BY[(G&&G.char)||save.char]||CHARS[0]}
 function unlockChar(id){if(save.chars.includes(id))return;save.chars.push(id);persist();const c=CH_BY[id];
- setTimeout(()=>{toast('Neuer Charakter freigeschaltet: '+c.name,'gold');SFX.legend()},600)}
+ setTimeout(()=>{toast(tr('Neuer Charakter freigeschaltet: ')+c.name,'gold');SFX.legend()},600)}
 function checkCharUnlocks(){
  const bf=save.bossFirst||{},bc=save.bossCount||{};
  if(bf.thunder)unlockChar('funken');
@@ -1649,9 +1821,9 @@ function render(){
  const sx=G.shake?rand(-G.shake,G.shake)*.5:0,sy=G.shake?rand(-G.shake,G.shake)*.5:0;
  ctx.translate(sx,sy-cam);
  // record line
- if(save.record>15){const ry=30-save.record*PXM;if(ry>cam-10&&ry<cam+H){ctx.strokeStyle=C.gold;ctx.globalAlpha=.55;ctx.setLineDash([8,8]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,ry);ctx.lineTo(W,ry);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.gold;ctx.font='700 11px "Chakra Petch",sans-serif';ctx.fillText('REKORD '+Math.round(save.record)+' m',8,ry-6);ctx.globalAlpha=1}}
+ if(save.record>15){const ry=30-save.record*PXM;if(ry>cam-10&&ry<cam+H){ctx.strokeStyle=C.gold;ctx.globalAlpha=.55;ctx.setLineDash([8,8]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,ry);ctx.lineTo(W,ry);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.gold;ctx.font='700 11px "Chakra Petch",sans-serif';ctx.fillText(tr('REKORD ')+Math.round(save.record)+' m',8,ry-6);ctx.globalAlpha=1}}
  // boss lines every boss height
- if(bossDef(G.bossIdx)){ const bh=bossDef(G.bossIdx).h,by=30-bh*PXM;if(!G.arena&&by>cam-10&&by<cam+H){ctx.strokeStyle=C.coral;ctx.globalAlpha=.5;ctx.lineWidth=2;ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(0,by);ctx.lineTo(W,by);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle=C.coral;ctx.font='700 11px "Chakra Petch",sans-serif';ctx.textAlign='right';ctx.fillText('BOSS '+bh+' m',W-8,by-6);ctx.textAlign='left'}}
+ if(bossDef(G.bossIdx)){ const bh=bossDef(G.bossIdx).h,by=30-bh*PXM;if(!G.arena&&by>cam-10&&by<cam+H){ctx.strokeStyle=C.coral;ctx.globalAlpha=.5;ctx.lineWidth=2;ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(0,by);ctx.lineTo(W,by);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle=C.coral;ctx.font='700 11px "Chakra Petch",sans-serif';ctx.textAlign='right';ctx.fillText(tr('BOSS ')+bh+' m',W-8,by-6);ctx.textAlign='left'}}
  // warns
  for(const w of G.warns){const k=1-w.t/w.max,blink=.5+.5*Math.sin(G.t*30);
   if(w.kind==='col'){const y0=G.arena?G.arena.lockY:cam;ctx.fillStyle=C.coral;ctx.globalAlpha=.08+.18*k;ctx.fillRect(w.x-w.w/2,y0,w.w,H);ctx.globalAlpha=.5+.4*blink;ctx.fillRect(w.x-w.w/2,y0,w.w,4);ctx.beginPath();ctx.moveTo(w.x-10,y0+14);ctx.lineTo(w.x+10,y0+14);ctx.lineTo(w.x,y0+28);ctx.fill();ctx.globalAlpha=1}
@@ -1866,7 +2038,7 @@ function updateHUD(){
  const sk=SYN.filter(s=>st.syn[s.id]).map(s=>s.name).join('|');if(hudCache.syn!==sk){hudCache.syn=sk;$('hSyn').innerHTML=SYN.filter(s=>st.syn[s.id]).map(s=>`<span class="syn" title="${s.d}">${s.name}</span>`).join('')}
  if(G.boss){const bw=Math.round(clamp(G.boss.hp/G.boss.maxHp,0,1)*1000)/10;if(hudCache.bw!==bw){hudCache.bw=bw;$('bHp').style.width=bw+'%'}}
 }
-function slotChipsHTML(items){return['f','w'].map(t=>{const own=Object.entries(items).filter(([id])=>IT[id].slot===t&&!(G&&G.merged.has(id)));let h=own.map(([id,n])=>chipHTML(id,n)).join('');for(let i=own.length;i<SLOTS[t];i++)h+=`<div class="chip empty" title="Freier ${SLOT_N[t]}-Slot"></div>`;return`<div class="sgrp"><span>${t==='f'?'Fäh.':'Werte'}</span>${h}</div>`}).join('')}
+function slotChipsHTML(items){return['f','w'].map(t=>{const own=Object.entries(items).filter(([id])=>IT[id].slot===t&&!(G&&G.merged.has(id)));let h=own.map(([id,n])=>chipHTML(id,n)).join('');for(let i=own.length;i<SLOTS[t];i++)h+=`<div class="chip empty" title="${tr('Freier')} ${SLOT_N[t]}-Slot"></div>`;return`<div class="sgrp"><span>${t==='f'?tr('Fäh.'):tr('Werte')}</span>${h}</div>`}).join('')}
 function chipHTML(id,n){const it=IT[id];return`<div class="chip" style="--rc:${RAR[it.r].c}" title="${it.name}">${iconImg(id)}${n>1?`<b>${n}</b>`:''}</div>`}
 function chipsHTML(items){return Object.entries(items).filter(([id])=>!(G&&G.merged.has(id))).map(([id,n])=>{const it=IT[id];return`<div class="chip" style="--rc:${RAR[it.r].c}" title="${it.name}">${iconImg(id)}${n>1?`<b>${n}</b>`:''}</div>`}).join('')}
 let bannerT=null;
@@ -1887,16 +2059,16 @@ function rollChoices(bias){
  }
  return res.sort(()=>Math.random()-.5);
 }
-function slotLine(){return`Fähigkeiten ${slotsUsed('f')}/${SLOTS.f} · Werte ${slotsUsed('w')}/${SLOTS.w}`}
-function itemMeta(it){const n=G.items[it.id]||0;if(n)return`Stufe ${n+1}/${it.max}`;
- const left=SLOTS[it.slot]-slotsUsed(it.slot);return`<span class="new">Neu</span> · ${SLOT_N[it.slot]}-Slot${left===1?' <span class="danger">(letzter freier)</span>':''}`}
+function slotLine(){return`${tr('Fähigkeiten')} ${slotsUsed('f')}/${SLOTS.f} · ${tr('Werte')} ${slotsUsed('w')}/${SLOTS.w}`}
+function itemMeta(it){const n=G.items[it.id]||0;if(n)return`${tr('Stufe')} ${n+1}/${it.max}`;
+ const left=SLOTS[it.slot]-slotsUsed(it.slot);return`<span class="new">${tr('Neu')}</span> · ${SLOT_N[it.slot]}-Slot${left===1?tr(' <span class="danger">(letzter freier)</span>'):''}`}
 function openLoot(bias){
  lootChoices=rollChoices(bias);
  const ev=evoReady();if(ev.length){lootChoices=[{evo:ev[0]},...lootChoices.slice(0,2)]}
- if(!lootChoices.length){G.coinF+=25;G.coinsRun=Math.floor(G.coinF);toast('Build komplett: +25 Münzen','gold');return}
+ if(!lootChoices.length){G.coinF+=25;G.coinsRun=Math.floor(G.coinF);toast(tr('Build komplett: +25 Münzen'),'gold');return}
  state='loot';SFX.loot();keys.left=keys.right=false;
- $('lootTitle').textContent='Beute!';
- $('lootSub').innerHTML=`${slotLine()} · Wähle mit <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>`;
+ $('lootTitle').textContent=tr('Beute!');
+ $('lootSub').innerHTML=`${slotLine()} · ${tr('Wähle mit')} <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>`;
  const box=$('lootCards');box.innerHTML='';
  box.className='cards'+(lootChoices.some(i=>i.r>=3)?' legend':'');
  if(lootChoices.some(i=>i.r>=3||i.evo))SFX.legend();
@@ -1907,17 +2079,17 @@ function openLoot(bias){
  });
  setScreen('scrLoot');setTimeout(()=>{const f=$('loot0');if(f)f.focus({preventScroll:true})},50);
 }
-function synHint(it){return SYN.filter(s=>s.req.includes(it.id)&&!st.syn[s.id]&&s.req.every(r=>r===it.id||G.items[r])).map(s=>`<div class="ds new">Aktiviert Synergie: ${s.name} (${s.d})</div>`).join('')}
+function synHint(it){return SYN.filter(s=>s.req.includes(it.id)&&!st.syn[s.id]&&s.req.every(r=>r===it.id||G.items[r])).map(s=>`<div class="ds new">${tr('Aktiviert Synergie:')} ${s.name} (${s.d})</div>`).join('')}
 function cardInner(it,key){return`${tileHTML(it.id)}<div><div class="nm">${it.name}${key?` <kbd>${key}</kbd>`:''}</div><div class="meta">${RAR[it.r].n} · ${it.cat} · ${itemMeta(it)}</div><div class="ds">${it.d}</div>${synHint(it)}</div>`}
 function evoReady(){if(!G)return[];return EVOS.filter(e=>!G.items[e.id]&&(G.items[e.a]||0)>=IT[e.a].max&&(G.items[e.b]||0)>0)}
-function evoCard(e,key){return`${tileHTML(e.id)}<div><div class="nm">${e.name}${key?` <kbd>${key}</kbd>`:''}</div><div class="meta">Entwicklung · ${IT[e.a].name} + ${IT[e.b].name} · <span class="new">gibt einen Slot frei</span></div><div class="ds">${e.d}</div></div>`}
+function evoCard(e,key){return`${tileHTML(e.id)}<div><div class="nm">${e.name}${key?` <kbd>${key}</kbd>`:''}</div><div class="meta">${tr('Entwicklung')} · ${IT[e.a].name} + ${IT[e.b].name} · <span class="new">${tr('gibt einen Slot frei')}</span></div><div class="ds">${e.d}</div></div>`}
 function doEvolve(e){
  if(!evoReady().includes(e))return;const p=G.p;
  G.merged.add(e.a);G.merged.add(e.b);G.items[e.id]=1;
  st=computeStats(G.items);{const old=p.maxHp;p.maxHp=calcMaxHp();if(p.maxHp>old)p.hp+=p.maxHp-old}
  if(e.id==='titanenherz')p.shieldReady=true;
  save.evoSeen=save.evoSeen||{};save.evoSeen[e.id]=true;persist();
- showBanner('Entwicklung!',e.name);SFX.legend();G.flash=.25;shake(8);
+ showBanner(tr('Entwicklung!'),e.name);SFX.legend();G.flash=.25;shake(8);
  for(let i=0;i<3;i++)ring(p.x,p.y-16,60+i*40,RAR[4].c,.5+i*.15);burst(p.x,p.y-16,RAR[4].c,40,320,6);
 }
 function giveItem(it){
@@ -1928,8 +2100,8 @@ function giveItem(it){
  {const old=p.maxHp;p.maxHp=calcMaxHp();if(p.maxHp>old)p.hp+=p.maxHp-old;if(it.id==='herz')p.hp+=25;p.hp=Math.min(p.maxHp,p.hp)}
  if(it.id==='phoenix')p.revive=true;
  if(it.id==='runen'){p.shieldReady=true}
- for(const s of SYN)if(st.syn[s.id]&&!prevSyn[s.id]){toast('Synergie: '+s.name+' · '+s.d)}
- for(const e of evoReady())if(e.a===it.id||e.b===it.id)toast('Entwicklung bereit: '+e.name+'. Nächste Beute, Händler oder Amboss.','gold');
+ for(const s of SYN)if(st.syn[s.id]&&!prevSyn[s.id]){toast(tr('Synergie: ')+s.name+' · '+s.d)}
+ for(const e of evoReady())if(e.a===it.id||e.b===it.id)toast(tr('Entwicklung bereit: ')+e.name+tr('. Nächste Beute, Händler oder Amboss.'),'gold');
  burst(p.x,p.y-16,RAR[it.r].c,24,240,5);ring(p.x,p.y-16,60,RAR[it.r].c,.5);
 }
 function chooseLoot(i){
@@ -1974,15 +2146,15 @@ function playReel(o){
 }
 function openBossReel(){
  const el=eligible();
- if(!el.length){G.coinF+=50;G.coinsRun=Math.floor(G.coinF);toast('Build komplett: +50 Münzen','gold');openShop();return}
+ if(!el.length){G.coinF+=50;G.coinsRun=Math.floor(G.coinF);toast(tr('Build komplett: +50 Münzen'),'gold');openShop();return}
  state='loot';keys.left=keys.right=false;
  const wr=rarWeights('boss');
  const winner=wpick(el.map(i=>[i,wr[i.r]||.5]));
  const fill=G.pool.map(id=>IT[id]);
- playReel({tag:'Bosstruhe',title:G.bossKills[G.bossKills.length-1]+' besiegt',winner,
+ playReel({tag:tr('Bosstruhe'),title:G.bossKills[G.bossKills.length-1]+' besiegt',winner,
   filler:()=>wpick(fill.map(i=>[i,[40,30,20,10][i.r]])),
   cardHTML:cardInner(winner).replace(/<div class="tile">/,'<div class="tile">'),
-  btn:'Einsammeln',
+  btn:tr('Einsammeln'),
   done:()=>{giveItem(winner);openShop()}});
 }
 
@@ -2000,8 +2172,8 @@ const EVENTS={
 const CURSES={hast:{name:'Fluch der Hast',d:'Gegner sind 35% schneller'},bruch:{name:'Fluch der Zerbrechlichkeit',d:'Du erleidest 25% mehr Schaden'}};
 function pickEventType(h){return wpick([['altar',2],['gier',2],['haendler',1.5],['quelle',1.5],['schrein',1.5],['amboss',evoReady().length?4:1.6],['portal',h>300?1.6:0],['ader',h>200?1.3:0]])}
 function eventPos(ev){if(ev.pl&&ev.pl.alive&&!ev.pl.breaking){ev.x=ev.pl.x+ev.ox;ev.y=ev.pl.y}return ev}
-function giveRandomItem(weights){const el=eligible();if(!el.length){G.coinF+=50;G.coinsRun=Math.floor(G.coinF);toast('Build komplett: +50 Münzen','gold');return null}
- const it=wpick(el.map(i=>[i,weights[i.r]||.2]));giveItem(it);toast('Erhalten: '+it.name+' ('+RAR[it.r].n+')','gold');return it}
+function giveRandomItem(weights){const el=eligible();if(!el.length){G.coinF+=50;G.coinsRun=Math.floor(G.coinF);toast(tr('Build komplett: +50 Münzen'),'gold');return null}
+ const it=wpick(el.map(i=>[i,weights[i.r]||.2]));giveItem(it);toast(tr('Erhalten: ')+it.name+' ('+RAR[it.r].n+')','gold');return it}
 function showEvent(ev,text,opts){
  state='loot';keys.left=keys.right=false;
  $('evTitle').textContent=EVENTS[ev.type].name;$('evTitle').style.color=EVENTS[ev.type].col;$('evText').textContent=text;
@@ -2015,29 +2187,29 @@ function closeEvent(){if($('scrEvent').hidden)return;setScreen(null);if(state===
 function triggerEvent(ev){
  const p=G.p,m=priceMul();ev.used=true;
  switch(ev.type){
-  case'altar':showEvent(ev,'Ein uralter Altar verlangt ein Opfer. Gib einen Teil deiner Lebenskraft und erhalte ein mächtiges Item.',[
-   {label:'Opfern: −25% LP',sub:'Garantiert episch oder legendär',col:'#c0392b',disabled:p.hp<=p.maxHp*.3,fn:()=>{p.hp-=p.maxHp*.25;burst(p.x,p.y-16,C.coral,20,200,4);SFX.hurt();giveRandomItem([0,.5,7,3])}},
-   {label:'Weitergehen',sub:'Nichts passiert'}]);break;
-  case'gier':{const price=Math.round(30*m);showEvent(ev,'Eine goldene Kiste. Sie flüstert: „Füttere mich.“ Manche Kisten beißen zurück.',[
-   {label:`Öffnen: ${price} Münzen`,sub:'50%: seltenes Item · 50%: Mimic greift an',col:C.gold,disabled:G.coinsRun<price,fn:()=>{spend(price);if(Math.random()<.5)giveRandomItem([0,6,3,1]);else{const e=makeElite('mimic',clamp(ev.x,40,W-40),ev.y-70);toast('Es war ein Mimic!');shake(6);SFX.boss()}}},
-   {label:'Weitergehen',sub:'Lieber nicht'}]);break}
-  case'haendler':$('shopTag').textContent='Mitten im Aufstieg';$('shopTitle').textContent='Wandernder Händler';openShop();break;
-  case'quelle':showEvent(ev,'Klares Wasser sprudelt aus dem Fels. Du darfst einmal trinken.',[
-   {label:'Volle Lebenspunkte',sub:`Heilt auf ${p.maxHp} LP`,col:'#6fd3ff',disabled:p.hp>=p.maxHp,fn:()=>{p.hp=p.maxHp;ring(p.x,p.y-16,50,'#6fd3ff',.4);SFX.buy()}},
-   {label:'+15 max. Lebenspunkte',sub:'Dauerhaft für diesen Run',col:'#6fd3ff',fn:()=>{G.bonusHp+=15;const o=p.maxHp;p.maxHp=calcMaxHp();p.hp+=p.maxHp-o;SFX.buy()}}]);break;
-  case'schrein':{const ck=Math.random()<.5?'hast':'bruch',c=CURSES[ck];showEvent(ev,'Violettes Licht pulsiert. Ein Pakt wird angeboten: Macht gegen einen Fluch bis zum nächsten Boss.',[
-   {label:'Pakt annehmen: 2 Items',sub:c.name+': '+c.d,col:C.violet,disabled:!!G.curse,fn:()=>{G.curse={type:ck};toast(c.name+' bis zum nächsten Boss');G.extraLoot=1;setScreen(null);state='play';openLoot(null);return'keep'}},
-   {label:'Ablehnen',sub:G.curse?'Du bist schon verflucht.':'Kein Risiko'}]);break}
+  case'altar':showEvent(ev,tr('Ein uralter Altar verlangt ein Opfer. Gib einen Teil deiner Lebenskraft und erhalte ein mächtiges Item.'),[
+   {label:tr('Opfern: −25% LP'),sub:tr('Garantiert episch oder legendär'),col:'#c0392b',disabled:p.hp<=p.maxHp*.3,fn:()=>{p.hp-=p.maxHp*.25;burst(p.x,p.y-16,C.coral,20,200,4);SFX.hurt();giveRandomItem([0,.5,7,3])}},
+   {label:tr('Weitergehen'),sub:tr('Nichts passiert')}]);break;
+  case'gier':{const price=Math.round(30*m);showEvent(ev,tr('Eine goldene Kiste. Sie flüstert: „Füttere mich.“ Manche Kisten beißen zurück.'),[
+   {label:`${tr('Öffnen:')} ${price} ${tr('Münzen')}`,sub:tr('50%: seltenes Item · 50%: Mimic greift an'),col:C.gold,disabled:G.coinsRun<price,fn:()=>{spend(price);if(Math.random()<.5)giveRandomItem([0,6,3,1]);else{const e=makeElite('mimic',clamp(ev.x,40,W-40),ev.y-70);toast(tr('Es war ein Mimic!'));shake(6);SFX.boss()}}},
+   {label:tr('Weitergehen'),sub:tr('Lieber nicht')}]);break}
+  case'haendler':$('shopTag').textContent=tr('Mitten im Aufstieg');$('shopTitle').textContent=tr('Wandernder Händler');openShop();break;
+  case'quelle':showEvent(ev,tr('Klares Wasser sprudelt aus dem Fels. Du darfst einmal trinken.'),[
+   {label:tr('Volle Lebenspunkte'),sub:`${tr('Heilt auf')} ${p.maxHp} ${tr(' LP').trim()}`,col:'#6fd3ff',disabled:p.hp>=p.maxHp,fn:()=>{p.hp=p.maxHp;ring(p.x,p.y-16,50,'#6fd3ff',.4);SFX.buy()}},
+   {label:tr('+15 max. Lebenspunkte'),sub:tr('Dauerhaft für diesen Run'),col:'#6fd3ff',fn:()=>{G.bonusHp+=15;const o=p.maxHp;p.maxHp=calcMaxHp();p.hp+=p.maxHp-o;SFX.buy()}}]);break;
+  case'schrein':{const ck=Math.random()<.5?'hast':'bruch',c=CURSES[ck];showEvent(ev,tr('Violettes Licht pulsiert. Ein Pakt wird angeboten: Macht gegen einen Fluch bis zum nächsten Boss.'),[
+   {label:tr('Pakt annehmen: 2 Items'),sub:c.name+': '+c.d,col:C.violet,disabled:!!G.curse,fn:()=>{G.curse={type:ck};toast(c.name+tr(' bis zum nächsten Boss'));G.extraLoot=1;setScreen(null);state='play';openLoot(null);return'keep'}},
+   {label:tr('Ablehnen'),sub:G.curse?tr('Du bist schon verflucht.'):tr('Kein Risiko')}]);break}
   case'amboss':{const opts=[];
-   for(const e of evoReady())opts.push({label:'Entwickeln: '+e.name,sub:IT[e.a].name+' + '+IT[e.b].name,col:RAR[4].c,fn:()=>doEvolve(e)});
+   for(const e of evoReady())opts.push({label:tr('Entwickeln: ')+e.name,sub:IT[e.a].name+' + '+IT[e.b].name,col:RAR[4].c,fn:()=>doEvolve(e)});
    const up=Object.keys(G.items).filter(id=>!G.merged.has(id)&&!IT[id].evo&&G.items[id]<IT[id].max).sort(()=>Math.random()-.5).slice(0,3);
-   for(const id of up)opts.push({label:'Verbessern: '+IT[id].name,sub:`Stufe ${G.items[id]} → ${G.items[id]+1}`,col:RAR[IT[id].r].c,fn:()=>{giveItem(IT[id]);SFX.buy()}});
-   if(!opts.length)opts.push({label:'Nichts zu schmieden',sub:'Du hast noch keine Items, die verbessert werden können.',disabled:true});
-   opts.push({label:'Weitergehen',sub:''});
-   showEvent(ev,'Ein Amboss mit glühender Esse. Hier kannst du ein Item um eine Stufe verbessern oder eine Entwicklung schmieden.',opts);break}
+   for(const id of up)opts.push({label:tr('Verbessern: ')+IT[id].name,sub:`${tr('Stufe')} ${G.items[id]} → ${G.items[id]+1}`,col:RAR[IT[id].r].c,fn:()=>{giveItem(IT[id]);SFX.buy()}});
+   if(!opts.length)opts.push({label:tr('Nichts zu schmieden'),sub:tr('Du hast noch keine Items, die verbessert werden können.'),disabled:true});
+   opts.push({label:tr('Weitergehen'),sub:''});
+   showEvent(ev,tr('Ein Amboss mit glühender Esse. Hier kannst du ein Item um eine Stufe verbessern oder eine Entwicklung schmieden.'),opts);break}
   case'portal':{const pool=['slime','bat','shooter'];if(G.maxH>550)pool.push('tank');if(G.maxH>1500)pool.push('spitter');if(G.maxH>2200)pool.push('charger');
-   makeElite(pick(pool),clamp(ev.x,40,W-40),ev.y-110);toast('Elite-Gegner! Besiege ihn für eine Bosstruhe.','gold');SFX.boss();shake(5);break}
-  case'ader':G.goldRain=8;for(let i=0;i<3;i++)spawnEnemy(G.maxH,G.camY+rand(80,300),rand(40,W-40));toast('Schatzader! 8 Sekunden Münzregen, aber Gegner kommen.','gold');SFX.powerup();break;
+   makeElite(pick(pool),clamp(ev.x,40,W-40),ev.y-110);toast(tr('Elite-Gegner! Besiege ihn für eine Bosstruhe.'),'gold');SFX.boss();shake(5);break}
+  case'ader':G.goldRain=8;for(let i=0;i<3;i++)spawnEnemy(G.maxH,G.camY+rand(80,300),rand(40,W-40));toast(tr('Schatzader! 8 Sekunden Münzregen, aber Gegner kommen.'),'gold');SFX.powerup();break;
  }
 }
 function makeElite(type,x,y){const e=makeEnemy(type,x,y,G.maxH);e.elite=true;e.hp*=6;e.maxHp*=6;e.r*=1.3;e.coin*=5;e.dmg*=1.3;ring(x,y,60,C.gold,.5);return e}
@@ -2064,18 +2236,18 @@ function priceMul(){return 1+.45*Math.max(0,G.bossIdx-1)}
 function itemPrice(it){return Math.round([30,55,95,160][it.r]*priceMul()*(CHR().id==='gluck'?.75:1))}
 function rollShop(){const av=eligible(),wr=rarWeights('shop'),res=[];for(let k=0;k<3&&av.length;k++){const it=wpick(av.map(i=>[i,wr[i.r]||.5]));res.push({it,sold:false});av.splice(av.indexOf(it),1)}shopOffers=res}
 function shopServices(){const p=G.p,m=priceMul()*(CHR().id==='gluck'?.75:1);return[
- {id:'heal',name:'Verband',d:'Heilt 50% LP',price:Math.round(20*m),ok:p.hp<p.maxHp},
- {id:'full',name:'Heiltrank',d:'Volle Lebenspunkte',price:Math.round(40*m),ok:p.hp<p.maxHp},
- {id:'maxhp',name:'Lebenselixier',d:'+20 max. LP für diesen Run',price:Math.round(45*m),ok:true},
- {id:'reroll',name:'Neu würfeln',d:'Neue Item-Angebote',price:10+10*G.shopRolls,ok:true},
- ...evoReady().map(e=>({id:'evo:'+e.id,name:'Entwickeln',d:e.name+' (gratis)',price:0,ok:true}))]}
+ {id:'heal',name:tr('Verband'),d:tr('Heilt 50% LP'),price:Math.round(20*m),ok:p.hp<p.maxHp},
+ {id:'full',name:tr('Heiltrank'),d:tr('Volle Lebenspunkte'),price:Math.round(40*m),ok:p.hp<p.maxHp},
+ {id:'maxhp',name:tr('Lebenselixier'),d:tr('+20 max. LP für diesen Run'),price:Math.round(45*m),ok:true},
+ {id:'reroll',name:tr('Neu würfeln'),d:tr('Neue Item-Angebote'),price:10+10*G.shopRolls,ok:true},
+ ...evoReady().map(e=>({id:'evo:'+e.id,name:tr('Entwickeln'),d:e.name+tr(' (gratis)'),price:0,ok:true}))]}
 function spend(n){if(G.coinsRun<n)return false;G.coinF-=n;G.coinsRun=Math.floor(G.coinF);G.coinsSpent+=n;SFX.coin();return true}
 function openShop(){state='loot';keys.left=keys.right=false;G.shopRolls=0;rollShop();renderShop();setScreen('scrShop');setTimeout(()=>$('bShopGo').focus({preventScroll:true}),30)}
 function renderShop(){
- const p=G.p;$('sCoins').textContent=G.coinsRun;$('shopSlots').textContent=slotLine()+' · LP '+Math.ceil(p.hp)+'/'+p.maxHp;
+ const p=G.p;$('sCoins').textContent=G.coinsRun;$('shopSlots').textContent=slotLine()+tr(' · LP ')+Math.ceil(p.hp)+'/'+p.maxHp;
  const el=eligible();
  $('shopItems').innerHTML=shopOffers.length?shopOffers.map((o,i)=>{const pr=itemPrice(o.it),ok=!o.sold&&el.includes(o.it)&&G.coinsRun>=pr;
-  return`<button class="card shopcard" data-buy="${i}" style="--rc:${RAR[o.it.r].c}" ${ok?'':'disabled'}>${cardInner(o.it)}<div class="pr">${o.sold?'Gekauft':(el.includes(o.it)?`<span class="cic"></span>${pr}`:'Slot voll')}</div></button>`}).join(''):'<p class="hint">Dein Build ist komplett. Hier gibt es keine Items mehr für dich.</p>';
+  return`<button class="card shopcard" data-buy="${i}" style="--rc:${RAR[o.it.r].c}" ${ok?'':'disabled'}>${cardInner(o.it)}<div class="pr">${o.sold?tr('Gekauft'):(el.includes(o.it)?`<span class="cic"></span>${pr}`:tr('Slot voll'))}</div></button>`}).join(''):tr('<p class="hint">Dein Build ist komplett. Hier gibt es keine Items mehr für dich.</p>');
  $('shopServ').innerHTML=shopServices().map(sv=>`<button class="svc" data-svc="${sv.id}" ${sv.ok&&G.coinsRun>=sv.price?'':'disabled'}><b>${sv.name}</b><small>${sv.d}</small><span class="pr"><span class="cic"></span>${sv.price}</span></button>`).join('');
  $('shopItems').querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const o=shopOffers[+b.dataset.buy];if(!o||o.sold)return;if(!eligible().includes(o.it))return;if(!spend(itemPrice(o.it)))return;o.sold=true;giveItem(o.it);SFX.buy();renderShop()});
  $('shopServ').querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>buyService(b.dataset.svc));
@@ -2087,12 +2259,12 @@ function buyService(id){const sv=shopServices().find(x=>x.id===id),p=G.p;if(!sv|
  if(id==='maxhp'){G.bonusHp+=20;const old=p.maxHp;p.maxHp=calcMaxHp();p.hp+=p.maxHp-old}
  if(id==='reroll'){G.shopRolls++;rollShop()}
  SFX.buy();renderShop()}
-function leaveShop(){$('shopTag').textContent='Nach dem Bosskampf';$('shopTitle').textContent='Händler';setScreen(null);state='play';last=performance.now();if(G.zoneBanner){G.zoneBanner=false;showBanner('Zone '+(G.zone+1)+' erreicht',ZONES[G.zone].name);SFX.record();zoneEnter(G.zone)}}
+function leaveShop(){$('shopTag').textContent=tr('Nach dem Bosskampf');$('shopTitle').textContent=tr('Händler');setScreen(null);state='play';last=performance.now();if(G.zoneBanner){G.zoneBanner=false;showBanner(tr('Zone ')+(G.zone+1)+tr(' erreicht'),ZONES[G.zone].name);SFX.record();zoneEnter(G.zone)}}
 /* ---- Zonen-Mechanik: aufsteigende Giftflut in den Giftigen Höhen ---- */
 const TIDE_ZONE=2;
 function zoneEnter(zi){
- if(zi===DARK_ZONE)setTimeout(()=>{if(G&&G.zone===DARK_ZONE)toast('Himmelsfestung: Nur der nächste Block ist sichtbar.','gold')},1600);
- if(zi===TIDE_ZONE){G.tide={y:G.camY+H+90,startH:G.maxH,drain:false};setTimeout(()=>{if(G&&G.tide)toast('Die Giftflut steigt! Bleib in Bewegung.','gold')},1600)}
+ if(zi===DARK_ZONE)setTimeout(()=>{if(G&&G.zone===DARK_ZONE)toast(tr('Himmelsfestung: Nur der nächste Block ist sichtbar.'),'gold')},1600);
+ if(zi===TIDE_ZONE){G.tide={y:G.camY+H+90,startH:G.maxH,drain:false};setTimeout(()=>{if(G&&G.tide)toast(tr('Die Giftflut steigt! Bleib in Bewegung.'),'gold')},1600)}
  else if(G.tide)G.tide.drain=true;
 }
 function updateTide(dt){const t=G.tide,p=G.p;if(!t)return;
@@ -2102,9 +2274,9 @@ function updateTide(dt){const t=G.tide,p=G.p;if(!t)return;
  t.y-=sp*dt;t.y=Math.min(t.y,G.camY+H+60);
  if(p.y-10>t.y&&G.pu.schild<=0&&!G.god&&state==='play'){G.tideTouched=true;G.hitTaken=true;
   const dmg=26*st.dmgTaken*dt;p.hp-=dmg;G.tideSnd-=dt;
-  if(G.tideSnd<=0){G.tideSnd=.45;beep(160,.12,'sawtooth',.035,-60);text(p.x,p.y-46,'Gift!',C.poison,13,.5)}
+  if(G.tideSnd<=0){G.tideSnd=.45;beep(160,.12,'sawtooth',.035,-60);text(p.x,p.y-46,tr('Gift!'),C.poison,13,.5)}
   if(Math.random()<.4)G.parts.push({x:p.x+rand(-10,10),y:p.y-rand(0,30),vx:rand(-30,30),vy:-rand(40,120),life:.5,max:.5,col:C.poison,size:3});
-  if(p.hp<=0){p.hp=0;if(!tryRevive())die('Giftflut')}
+  if(p.hp<=0){p.hp=0;if(!tryRevive())die(tr('Giftflut'))}
  }
 }
 function drawTide(){const t=G.tide;if(!t||t.y>G.camY+H+40)return;const y0=t.y,bot=G.camY+H+30;
@@ -2136,40 +2308,40 @@ const Board={
 };
 function renderBoard(list,isOnline,el,highlight){
  el.textContent='';
- if(!list.length){const p=document.createElement('p');p.className='hint';p.textContent='Noch keine Einträge. Sei die oder der Erste!';el.appendChild(p);return}
+ if(!list.length){const p=document.createElement('p');p.className='hint';p.textContent=tr('Noch keine Einträge. Sei die oder der Erste!');el.appendChild(p);return}
  list.slice(0,isOnline?50:20).forEach((e,i)=>{
   const row=document.createElement('div');row.className='brow'+((isOnline?e.player===save.pid:e.name===save.name)?' me':'');
   const rk=document.createElement('span');rk.className='brk';rk.textContent=(i+1)+'.';
   const nm=document.createElement('span');nm.className='bnm';nm.textContent=e.name;
-  const zn=document.createElement('span');zn.className='bzn';zn.textContent='Zone '+(e.zone||1);
+  const zn=document.createElement('span');zn.className='bzn';zn.textContent=tr('Zone ')+(e.zone||1);
   const sc=document.createElement('span');sc.className='bsc';sc.textContent=e.score+' m';
   row.append(rk,nm,zn,sc);el.appendChild(row);
  });
 }
 async function openBoard(){
  setScreen('scrBoard');const el=$('boardList');
- $('boardStatus').textContent=ONLINE?'Lade Bestenliste …':'Offline-Modus: Bestenliste nur auf diesem Gerät.';
- $('boardMe').textContent=save.name?'Du spielst als: '+save.name:'';
+ $('boardStatus').textContent=ONLINE?tr('Lade Bestenliste …'):tr('Offline-Modus: Bestenliste nur auf diesem Gerät.');
+ $('boardMe').textContent=save.name?tr('Du spielst als: ')+save.name:'';
  if(!ONLINE){renderBoard(Board.local(),false,el);return}
- try{const list=await Board.fetchTop();renderBoard(list,true,el);$('boardStatus').textContent='Online-Bestenliste · Top 50 · höchster Score pro Spieler'}
- catch(e){$('boardStatus').textContent='Server nicht erreichbar. Zeige die Bestenliste dieses Geräts.';renderBoard(Board.local(),false,el)}
+ try{const list=await Board.fetchTop();renderBoard(list,true,el);$('boardStatus').textContent=tr('Online-Bestenliste · Top 50 · höchster Score pro Spieler')}
+ catch(e){$('boardStatus').textContent=tr('Server nicht erreichbar. Zeige die Bestenliste dieses Geräts.');renderBoard(Board.local(),false,el)}
 }
 // Name eingeben (beim ersten Start oder über die Einstellungen)
 let afterName=null;
 function askName(then){afterName=then||null;$('nameInput').value=save.name||'';$('nameErr').textContent='';setScreen('scrName');setTimeout(()=>$('nameInput').focus(),30)}
 function confirmName(){const v=$('nameInput').value.replace(/\s+/g,' ').trim().slice(0,16);
- if(v.length<2){$('nameErr').textContent='Bitte mindestens 2 Zeichen eingeben.';return}
+ if(v.length<2){$('nameErr').textContent=tr('Bitte mindestens 2 Zeichen eingeben.');return}
  save.name=v;if(!save.pid)save.pid=uuid();persist();refreshMenu();
  const f=afterName;afterName=null;if(f)f();else setScreen('scrMenu')}
 async function submitRun(){
  if(G.test||!save.name)return;
  const score=Math.floor(G.maxH),zone=G.zone+1;
  Board.addLocal(score,zone);
- if(!ONLINE){$('oBoard').textContent='Lokale Bestenliste aktualisiert.';return}
- $('oBoard').textContent='Score wird eingetragen …';
+ if(!ONLINE){$('oBoard').textContent=tr('Lokale Bestenliste aktualisiert.');return}
+ $('oBoard').textContent=tr('Score wird eingetragen …');
  try{await Board.submit(score,zone);const list=await Board.fetchTop();const i=list.findIndex(e=>e.player===save.pid);
-  $('oBoard').textContent=i>=0?`Bestenliste: Platz ${i+1} von ${list.length}`+(list[i].score>score?` (dein Bestwert: ${list[i].score} m)`:''):'Score eingetragen.'}
- catch(e){$('oBoard').textContent='Bestenliste gerade nicht erreichbar. Dein Score ist lokal gespeichert.'}
+  $('oBoard').textContent=i>=0?`${tr('Bestenliste: Platz')} ${i+1} ${tr('von')} ${list.length}`+(list[i].score>score?` (${tr('dein Bestwert:')} ${list[i].score} m)`:''):tr('Score eingetragen.')}
+ catch(e){$('oBoard').textContent=tr('Bestenliste gerade nicht erreichbar. Dein Score ist lokal gespeichert.')}
 }
 
 /* ================= RUN END ================= */
@@ -2181,51 +2353,52 @@ function die(cause){
  if(!G.test){save.totalCoins=(save.totalCoins||0)+G.coinsRun;checkCharUnlocks();save.coins+=G.coinsRun;save.kills+=G.kills;if(newRec)save.record=Math.floor(G.maxH);persist()}
  $('bossbar').hidden=true;
  setTimeout(()=>{
-  $('oCause').textContent=(G.won?'Gipfel bezwungen · ':'')+(cause==='Abgestürzt'?'Abgestürzt':'Besiegt von: '+cause);
-  $('oRec').innerHTML=newRec?'<div class="newrec">Neuer Rekord!</div>':'';
-  $('oBoard').textContent=G.test?'Testmodus: kein Eintrag in die Bestenliste.':'';submitRun();
-  const rows=[['Erreichte Höhe',Math.floor(G.maxH)+' m'],['Persönlicher Rekord',save.record+' m'],['Münzen verdient','+'+G.coinsRun],['Beim Händler ausgegeben',G.coinsSpent],['Gegner besiegt',G.kills],['Bosse besiegt',G.bossKills.length?G.bossKills.join(', '):'keine'],['Höchster Treffer',Math.round(G.maxHit)],['Gesamtschaden',Math.round(G.dmgDealt)]];
+  $('oCause').textContent=(G.won?tr('Gipfel bezwungen · '):'')+(cause===tr('Abgestürzt')?tr('Abgestürzt'):tr('Besiegt von: ')+cause);
+  $('oRec').innerHTML=newRec?tr('<div class="newrec">Neuer Rekord!</div>'):'';
+  $('oBoard').textContent=G.test?tr('Testmodus: kein Eintrag in die Bestenliste.'):'';submitRun();
+  const rows=[[tr('Erreichte Höhe'),Math.floor(G.maxH)+' m'],[tr('Persönlicher Rekord'),save.record+' m'],[tr('Münzen verdient'),'+'+G.coinsRun],[tr('Beim Händler ausgegeben'),G.coinsSpent],[tr('Gegner besiegt'),G.kills],[tr('Bosse besiegt'),G.bossKills.length?G.bossKills.join(', '):tr('keine')],[tr('Höchster Treffer'),Math.round(G.maxHit)],[tr('Gesamtschaden'),Math.round(G.dmgDealt)]];
   $('oStats').innerHTML=rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
   $('oBuild').innerHTML=chipsHTML(G.items);
   setScreen('scrOver');$('bAgain').focus({preventScroll:true});
  },700);
 }
 /* ---- Testmodus ---- */
-function markTest(){if(!G.test){G.test=true;$('hTest').hidden=false;toast('Testmodus aktiv: Rekord und Münzen werden nicht gespeichert')}}
+function markTest(){if(!G.test){G.test=true;$('hTest').hidden=false;toast(tr('Testmodus aktiv: Rekord und Münzen werden nicht gespeichert'))}}
 function teleport(z){if(!G)return;markTest();
  const p=G.p,h=z===0?0:bossDef(z-1).h+15;
  G.zoneFrom=z;G.zone=z;G.zoneT=1;G.bossIdx=z;G.boss=null;G.arena=null;G.warns=[];$('bossbar').hidden=true;
  G.platforms=[];G.enemies=[];G.shots=[];G.eshots=[];G.coins=[];G.chests=[];G.pups=[];G.tide=null;G.beams=[];G.wind=null;G.chainCur=null;G.chainX=null;G.chainNext=null;G.events=[];G.goldRain=0;
  p.y=30-h*PXM;p.vy=-st.jumpV;p.x=W/2;G.camY=p.y-H*.6;G.maxH=h;G.nextLootH=h+40;G.nextEventH=h+120;
  G.nextY=p.y+40;addPlat(W/2-70,p.y+40,140,'normal');while(G.nextY>G.camY-240)genRow();
- Music.set('run');zoneEnter(z);showBanner('Teleport · Zone '+(z+1),ZONES[z].name);resume()}
+ Music.set('run');zoneEnter(z);showBanner(tr('Teleport · Zone ')+(z+1),ZONES[z].name);resume()}
 function buildDev(){
  if(CFG.devMode===false)return;
  $('devZones').innerHTML=ZONES.map((z,i)=>`<button class="pre" data-tz="${i}" style="--pc:${z.mote}">${i+1} · ${z.name}</button>`).join('');
  $('devZones').querySelectorAll('[data-tz]').forEach(b=>b.onclick=()=>teleport(+b.dataset.tz));
- $('devGod').textContent='Unverwundbar: '+(G&&G.god?'an':'aus');
+ $('devGod').textContent=tr('Unverwundbar: ')+(G&&G.god?tr('an'):tr('aus'));
 }
 $('devBoss').onclick=()=>{if(!G||G.boss)return;markTest();resume();startBoss()};
-$('devCoins').onclick=()=>{if(!G)return;markTest();G.coinF+=200;G.coinsRun=Math.floor(G.coinF);SFX.coin();toast('+200 Münzen','gold')};
+$('devCoins').onclick=()=>{if(!G)return;markTest();G.coinF+=200;G.coinsRun=Math.floor(G.coinF);SFX.coin();toast(tr('+200 Münzen'),'gold')};
 $('devLoot').onclick=()=>{if(!G)return;markTest();resume();openLoot(null)};
-$('devEvent').onclick=()=>{if(!G)return;markTest();G.nextEventH=0;const keep=G.nextY;resume();toast('Das nächste Ereignis erscheint gleich über dir.')};
-$('devChars').onclick=()=>{for(const c of CHARS)if(!save.chars.includes(c.id))save.chars.push(c.id);persist();toast('Alle Charaktere freigeschaltet (dauerhaft)','gold')};
+$('devEvent').onclick=()=>{if(!G)return;markTest();G.nextEventH=0;const keep=G.nextY;resume();toast(tr('Das nächste Ereignis erscheint gleich über dir.'))};
+$('devChars').onclick=()=>{for(const c of CHARS)if(!save.chars.includes(c.id))save.chars.push(c.id);persist();toast(tr('Alle Charaktere freigeschaltet (dauerhaft)'),'gold')};
 $('devGod').onclick=()=>{if(!G)return;markTest();G.god=!G.god;buildDev()};
-function quitRun(){if(!G)return;state='play';die('Aufgegeben')}
+function quitRun(){if(!G)return;state='play';die(tr('Aufgegeben'))}
 
 /* ================= MENUS ================= */
 const screens=['scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
 function setScreen(id){for(const s of screens)$(s).hidden=s!==id}
 function toMenu(){Music.set('menu');Music.setDuck(false);state='menu';G=null;$('hud').hidden=true;$('bossbar').hidden=true;refreshMenu();setScreen('scrMenu')}
 function syncSettings(){for(const [id,key] of VOLS){if(document.activeElement!==$(id))$(id).value=save[key];$(id+'V').textContent=save[key]+'%'}
- const a='Ton: '+(save.sound?'an':'aus'),b='Bildschirmwackeln: '+(save.shake?'an':'aus');$('bSound').textContent=a;$('pSound').textContent=a;$('bShake').textContent=b;$('pShake').textContent=b}
-function refreshMenu(){syncSettings();$('mRec').textContent=save.record+' m';$('mCoins').textContent=save.coins;$('mUnl').textContent=save.unlocked.length+'/'+ITEMS.length;$('bSound').textContent='Ton: '+(save.sound?'an':'aus');$('bShake').textContent='Bildschirmwackeln: '+(save.shake?'an':'aus')}
+ const lt=LANG==='en'?'Language: English':'Sprache: Deutsch';$('bLang').textContent=lt;$('pLang').textContent=lt;$('bLangMenu').textContent=LANG==='en'?'DE':'EN';
+ const a=tr('Ton: ')+(save.sound?tr('an'):tr('aus')),b=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'));$('bSound').textContent=a;$('pSound').textContent=a;$('bShake').textContent=b;$('pShake').textContent=b}
+function refreshMenu(){syncSettings();$('mRec').textContent=save.record+' m';$('mCoins').textContent=save.coins;$('mUnl').textContent=save.unlocked.length+'/'+ITEMS.length;$('bSound').textContent=tr('Ton: ')+(save.sound?tr('an'):tr('aus'));$('bShake').textContent=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'))}
 function buildChests(){
  $('cCoins').textContent=save.coins;
  const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
  $('chestList').innerHTML=CHESTS.map(c=>`<div class="chest"><div class="cbox" style="--cc:${c.col}"></div><div><div class="cn">${c.name}</div><div class="odds">${c.odds.map((o,i)=>o?`<span style="--rc:${RAR[i].c}">${RAR[i].n} ${o}%</span>`:'').join('')}</div></div><div class="price"><button class="btn${save.coins>=c.price&&locked.length?' main':''}" data-chest="${c.id}" ${save.coins<c.price||!locked.length?'disabled':''}><span class="cic"></span>${c.price}</button></div></div>`).join('');
  $('chestList').querySelectorAll('[data-chest]').forEach(b=>b.onclick=()=>openChest(b.dataset.chest));
- if(!locked.length)$('reveal').innerHTML='<p class="hint">Alle Items sind freigeschaltet.</p>';
+ if(!locked.length)$('reveal').innerHTML=tr('<p class="hint">Alle Items sind freigeschaltet.</p>');
 }
 function openChest(id){
  const c=CHESTS.find(x=>x.id===id);const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
@@ -2236,10 +2409,10 @@ function openChest(id){
  if(!it)return;
  // result is decided and saved before the animation, so closing the page mid-spin loses nothing
  save.coins-=c.price;save.unlocked.push(it.id);persist();refreshMenu();
- const card=`${tileHTML(it.id)}<div><div class="nm">${it.name}</div><div class="meta">${RAR[it.r].n} · ${it.cat} · ${SLOT_N[it.slot]} · <span class="new">Freigeschaltet</span></div><div class="ds">${it.d}</div></div>`;
- playReel({tag:c.name,title:'Truhe öffnet sich',winner:it,
+ const card=`${tileHTML(it.id)}<div><div class="nm">${it.name}</div><div class="meta">${RAR[it.r].n} · ${it.cat} · ${SLOT_N[it.slot]} · <span class="new">${tr('Freigeschaltet')}</span></div><div class="ds">${it.d}</div></div>`;
+ playReel({tag:c.name,title:tr('Truhe öffnet sich'),winner:it,
   filler:()=>{const rr=wpick(c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0));const cand=ITEMS.filter(i=>i.r===rr);return cand.length?pick(cand):pick(ITEMS)},
-  cardHTML:card,btn:'Zurück zu den Truhen',
+  cardHTML:card,btn:tr('Zurück zu den Truhen'),
   done:()=>{buildChests();$('reveal').innerHTML=`<div class="card" style="--rc:${RAR[it.r].c};cursor:default">${card}</div>`;setScreen('scrChests')}});
 }
 /* ---- Loadout: Loot-Pool vor dem Run ---- */
@@ -2252,26 +2425,26 @@ function buildChars(){
  showCharDesc(sel);
 }
 function showCharDesc(id){const c=CH_BY[id],u=save.chars.includes(id),hid=c.secret&&!u;const d=$('charDesc');d.textContent='';
- const n=document.createElement('div');n.className='cdn';n.textContent=hid?'Geheimer Charakter':c.name+' · '+c.weapon+' · '+c.hp+' LP';
- const a=document.createElement('div');a.textContent=hid?'Wer den Gipfel bezwingt, erfährt mehr.':c.wd+' '+c.pd;
- const t=document.createElement('div');t.className=u?'cdt ok':'cdt';t.textContent=u?(id===save.char?'Ausgewählt':'Freigeschaltet: antippen zum Auswählen'):'Gesperrt · Aufgabe: '+(hid?'???':c.task);
+ const n=document.createElement('div');n.className='cdn';n.textContent=hid?tr('Geheimer Charakter'):c.name+' · '+c.weapon+' · '+c.hp+tr(' LP');
+ const a=document.createElement('div');a.textContent=hid?tr('Wer den Gipfel bezwingt, erfährt mehr.'):c.wd+' '+c.pd;
+ const t=document.createElement('div');t.className=u?'cdt ok':'cdt';t.textContent=u?(id===save.char?tr('Ausgewählt'):tr('Freigeschaltet: antippen zum Auswählen')):tr('Gesperrt · Aufgabe: ')+(hid?'???':c.task);
  d.append(n,a,t)}
 function buildLoadout(){
  buildChars();
  const un=ITEMS.filter(i=>save.unlocked.includes(i.id));
- $('presetRow').innerHTML=PRESETS.map(p=>`<button class="pre" data-pre="${p.id}" style="--pc:${p.col}">${p.name}</button>`).join('')+`<button class="pre" data-pre="clear" style="--pc:var(--muted)">Leeren</button>`;
+ $('presetRow').innerHTML=PRESETS.map(p=>`<button class="pre" data-pre="${p.id}" style="--pc:${p.col}">${p.name}</button>`).join('')+`<button class="pre" data-pre="clear" style="--pc:var(--muted)">${tr('Leeren')}</button>`;
  $('presetRow').querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>applyPreset(b.dataset.pre));
  const grp=t=>un.filter(i=>i.slot===t).map(it=>{const on=draftPool.includes(it.id);return`<button class="cell pick${on?' sel':''}" data-p="${it.id}" style="--rc:${RAR[it.r].c}" aria-pressed="${on}" title="${it.d}">${tileHTML(it.id)}<div class="cnm">${it.name}</div></button>`}).join('');
  $('poolF').innerHTML=grp('f');$('poolW').innerHTML=grp('w');
  document.querySelectorAll('#scrLoad [data-p]').forEach(b=>b.onclick=()=>togglePool(b.dataset.p));
  const n=draftPool.length;
- $('poolCount').innerHTML=`<b>${n}</b> / ${POOL_MAX} im Pool`+(n<POOL_MIN?` · <span class="danger">mindestens ${POOL_MIN}</span>`:'');
+ $('poolCount').innerHTML=`<b>${n}</b> / ${POOL_MAX} ${tr('im Pool')}`+(n<POOL_MIN?` · <span class="danger">${tr('mindestens')} ${POOL_MIN}</span>`:'');
  $('bGo').disabled=n<POOL_MIN;
  const syn=SYN.filter(s=>s.req.every(r=>draftPool.includes(r)));
- $('poolSyn').innerHTML=syn.length?syn.map(s=>`<span class="syn" title="${s.d}">${s.name}</span>`).join(''):'<span class="hint">Keine Synergie im Pool möglich</span>';
+ $('poolSyn').innerHTML=syn.length?syn.map(s=>`<span class="syn" title="${s.d}">${s.name}</span>`).join(''):tr('<span class="hint">Keine Synergie im Pool möglich</span>');
  $('poolDetail').textContent='';
 }
-function togglePool(id){const i=draftPool.indexOf(id);if(i>=0)draftPool.splice(i,1);else if(draftPool.length<POOL_MAX)draftPool.push(id);else{$('poolCount').innerHTML=`<span class="danger">Pool voll (${POOL_MAX}). Entferne zuerst ein Item.</span>`;return}buildLoadout();const it=IT[id];$('poolDetail').textContent=it.name+': '+it.d}
+function togglePool(id){const i=draftPool.indexOf(id);if(i>=0)draftPool.splice(i,1);else if(draftPool.length<POOL_MAX)draftPool.push(id);else{$('poolCount').innerHTML=`<span class="danger">${tr('Pool voll')} (${POOL_MAX}). ${tr('Entferne zuerst ein Item.')}</span>`;return}buildLoadout();const it=IT[id];$('poolDetail').textContent=it.name+': '+it.d}
 function applyPreset(k){
  if(k==='clear'){draftPool=[];buildLoadout();return}
  const p=PRESETS.find(x=>x.id===k);draftPool=p.items.filter(id=>save.unlocked.includes(id));
@@ -2280,15 +2453,15 @@ function applyPreset(k){
 }
 function startFromLoadout(){if(draftPool.length<POOL_MIN)return;save.pool=draftPool.slice();persist();audioOn();newRun()}
 function buildColl(){
- $('collCount').textContent=`${save.unlocked.length} von ${ITEMS.length} Items freigeschaltet. Tippe ein Item für Details.`;
+ $('collCount').textContent=`${save.unlocked.length} ${tr('von')} ${ITEMS.length} ${tr('Items freigeschaltet. Tippe ein Item für Details.')}`;
  $('collGrid').innerHTML=ITEMS.map(it=>{const u=save.unlocked.includes(it.id);return`<button class="cell${u?'':' locked'}" data-it="${it.id}" style="--rc:${RAR[it.r].c};border-color:var(--ink)">${tileHTML(it.id,!u)}<div class="cnm">${u?it.name:RAR[it.r].n}</div></button>`}).join('');
  $('collGrid').querySelectorAll('[data-it]').forEach(b=>b.onclick=()=>{const it=IT[b.dataset.it],u=save.unlocked.includes(it.id);
-  $('detail').innerHTML=`<div class="card" style="--rc:${RAR[it.r].c};cursor:default">${tileHTML(it.id,!u)}<div><div class="nm">${u?it.name:'Gesperrt'}</div><div class="meta">${RAR[it.r].n} · ${it.cat}${u?' · max. Stufe '+it.max:''}</div><div class="ds">${u?it.d:'Öffne Truhen oder besiege einen Boss zum ersten Mal, um dieses Item freizuschalten.'}</div></div></div>`});
+  $('detail').innerHTML=`<div class="card" style="--rc:${RAR[it.r].c};cursor:default">${tileHTML(it.id,!u)}<div><div class="nm">${u?it.name:tr('Gesperrt')}</div><div class="meta">${RAR[it.r].n} · ${it.cat}${u?tr(' · max. Stufe ')+it.max:''}</div><div class="ds">${u?it.d:tr('Öffne Truhen oder besiege einen Boss zum ersten Mal, um dieses Item freizuschalten.')}</div></div></div>`});
  $('detail').innerHTML='';
  const seen=save.evoSeen||{};
- $('evoList').innerHTML='<h3>Entwicklungen</h3>'+EVOS.map(e=>`<div class="evorow"><b>${e.name}${seen[e.id]?' ✓':''}</b><span>${IT[e.a].name} (max.) + ${IT[e.b].name}</span><small>${e.d}</small></div>`).join('');
+ $('evoList').innerHTML=tr('<h3>Entwicklungen</h3>')+EVOS.map(e=>`<div class="evorow"><b>${e.name}${seen[e.id]?' ✓':''}</b><span>${IT[e.a].name} ${tr('(max.)')} + ${IT[e.b].name}</span><small>${e.d}</small></div>`).join('');
 }
-function buildLife(){$('lifeStats').innerHTML=[['Runs gespielt',save.runs],['Gegner besiegt',save.kills],['Bosse besiegt',save.bosses],['Rekord',save.record+' m']].map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('')}
+function buildLife(){$('lifeStats').innerHTML=[[tr('Runs gespielt'),save.runs],[tr('Gegner besiegt'),save.kills],[tr('Bosse besiegt'),save.bosses],[tr('Rekord'),save.record+' m']].map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('')}
 
 $('bStart').onclick=()=>{audioOn();save.name?openLoadout():askName(openLoadout)};
 $('bBoard').onclick=()=>openBoard();
@@ -2301,7 +2474,7 @@ $('bShopGo').onclick=leaveShop;
 $('reel').onclick=()=>{if(reel)reel.skip()};
 $('bChests').onclick=()=>{buildChests();$('reveal').innerHTML='<p class="hint">Truhen schalten Items dauerhaft frei. Sie landen danach im Loot-Pool deiner Runs.</p>';setScreen('scrChests')};
 $('bColl').onclick=()=>{buildColl();setScreen('scrColl')};
-$('bSet').onclick=()=>{buildLife();resetArm=false;$('bReset').textContent='Spielstand zurücksetzen';setScreen('scrSet')};
+$('bSet').onclick=()=>{buildLife();resetArm=false;$('bReset').textContent=tr('Spielstand zurücksetzen');setScreen('scrSet')};
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{refreshMenu();setScreen('scrMenu')});
 $('bSound').onclick=()=>{save.sound=!save.sound;persist();refreshMenu();audioOn();applyVolumes()};
 const VOLS=[['volMus','musVol'],['pMus','musVol'],['volSfx','sfxVol'],['pSfx','sfxVol']];
@@ -2312,13 +2485,13 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.bt
 addEventListener('pointerdown',audioOn);
 $('bShake').onclick=()=>{save.shake=!save.shake;persist();syncSettings()};
 let resetArm=false;
-$('bReset').onclick=()=>{if(!resetArm){resetArm=true;$('bReset').innerHTML='<span class="danger">Wirklich löschen? Erneut klicken</span>';return}save=DEFAULT_SAVE();persist();resetArm=false;$('bReset').textContent='Spielstand gelöscht';refreshMenu();buildLife()};
+$('bReset').onclick=()=>{if(!resetArm){resetArm=true;$('bReset').innerHTML=tr('<span class="danger">Wirklich löschen? Erneut klicken</span>');return}save=DEFAULT_SAVE();persist();resetArm=false;$('bReset').textContent=tr('Spielstand gelöscht');refreshMenu();buildLife()};
 $('bSkip').onclick=skipLoot;
 $('bResume').onclick=()=>resume();
 $('bQuit').onclick=quitRun;
 $('bAgain').onclick=()=>{audioOn();newRun()};
 $('bMenu').onclick=toMenu;
-function pause(){if(state!=='play')return;state='pause';buildDev();Music.setDuck(true);keys.left=keys.right=false;$('pBuild').innerHTML=chipsHTML(G.items)||'<p class="hint">Noch keine Items in diesem Run.</p>';setScreen('scrPause')}
+function pause(){if(state!=='play')return;state='pause';buildDev();Music.setDuck(true);keys.left=keys.right=false;$('pBuild').innerHTML=chipsHTML(G.items)||tr('<p class="hint">Noch keine Items in diesem Run.</p>');setScreen('scrPause')}
 function resume(){if(state!=='pause')return;Music.setDuck(false);setScreen(null);state='play';last=performance.now()}
 
 /* ================= INPUT ================= */
@@ -2330,7 +2503,7 @@ addEventListener('keydown',e=>{
  if(L.has(e.key)){keys.left=true;if(state==='play')e.preventDefault()}
  if(state==='play'&&(e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key===' ')){e.preventDefault();if(!e.repeat)airJump()}
  if(R.has(e.key)){keys.right=true;if(state==='play')e.preventDefault()}
- if(e.key==='m'||e.key==='M'){save.sound=!save.sound;persist();syncSettings();applyVolumes();if(G)toast('Ton '+(save.sound?'an':'aus'))}
+ if(e.key==='m'||e.key==='M'){save.sound=!save.sound;persist();syncSettings();applyVolumes();if(G)toast(tr('Ton ')+(save.sound?tr('an'):tr('aus')))}
  if(state==='play'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){pause();e.preventDefault();return}
  if(state==='pause'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){resume();e.preventDefault();return}
  if(state==='loot'){if(['1','2','3','4'].includes(e.key)){chooseLoot(+e.key-1);e.preventDefault()}}
@@ -2358,6 +2531,11 @@ function frame(now){
  updateHUD();
  requestAnimationFrame(frame);
 }
+function setLang(l){save.lang=l;persist();applyLang(l);refreshMenu();try{buildLife()}catch(e){}
+ if(!$('scrLoad').hidden)buildLoadout();if(!$('scrColl').hidden)buildColl();if(!$('scrChests').hidden)buildChests();if(!$('scrPause').hidden&&G)$('pBuild').innerHTML=chipsHTML(G.items)||tr('<p class="hint">Noch keine Items in diesem Run.</p>');if(!$('scrBoard').hidden)openBoard()}
+const toggleLang=()=>setLang(LANG==='en'?'de':'en');
+$('bLang').onclick=toggleLang;$('pLang').onclick=toggleLang;$('bLangMenu').onclick=toggleLang;
+applyLang(save.lang||'de');
 if(CFG.devMode===false)$('devBox').hidden=true; // Veröffentlichte Version: kein Testmodus
 refreshMenu();setScreen('scrMenu');
 requestAnimationFrame(frame);

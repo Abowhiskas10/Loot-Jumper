@@ -267,7 +267,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
       <button class="btn" id="bColl">Sammlung</button>
       <button class="btn" id="bSet">Einstellungen</button>
     </div>
-    <div class="hint"><kbd>A</kbd> <kbd>D</kbd> oder <kbd>←</kbd> <kbd>→</kbd> bewegen · Springen und Schießen passieren automatisch<br><kbd>W</kbd> / <kbd>↑</kbd> Doppelsprung (mit Wolkenstiefel)<br>Handy: linke/rechte Hälfte halten · nach oben wischen = Doppelsprung · <b>II</b> = Pause · <kbd>P</kbd> Pause · <kbd>M</kbd> Ton</div>
+    <div class="hint"><kbd>A</kbd> <kbd>D</kbd> oder <kbd>←</kbd> <kbd>→</kbd> bewegen · Springen und Schießen passieren automatisch<br><kbd>W</kbd> / <kbd>↑</kbd> Doppelsprung (mit Wolkenstiefel)<br>Handy: linke/rechte Hälfte halten · nach oben wischen oder 2. Finger auf derselben Seite = Doppelsprung · <b>II</b> = Pause · <kbd>P</kbd> Pause · <kbd>M</kbd> Ton</div>
   </div>
 
 
@@ -439,7 +439,7 @@ const EN_TXT={
  'Rekord':'Record','SCHILD':'SHIELD','TESTMODUS':'TEST MODE','Zone':'Zone','Münzen':'Coins','Items':'Items',
  'Run starten':'Start run','Truhen öffnen':'Open chests','Bestenliste':'Leaderboard','Sammlung':'Collection','Einstellungen':'Settings',
  'oder':'or','bewegen · Springen und Schießen passieren automatisch':'move · jumping and shooting happen automatically',
- 'Doppelsprung (mit Wolkenstiefel)':'double jump (with Cloud Boots)','Handy: linke/rechte Hälfte halten · nach oben wischen = Doppelsprung ·':'Phone: hold left/right half · swipe up = double jump ·',
+ 'Doppelsprung (mit Wolkenstiefel)':'double jump (with Cloud Boots)','Handy: linke/rechte Hälfte halten · nach oben wischen oder 2. Finger auf derselben Seite = Doppelsprung ·':'Phone: hold left/right half · swipe up or tap a 2nd finger on the same side = double jump ·',
  '= Pause ·':'= pause ·','Pause ·':'pause ·','Ton':'sound','← Zurück':'← Back','Charakter':'Character','Loot-Pool':'Loot pool',
  'Nur diese Items können im Run erscheinen. Im Run hast du 3 Fähigkeits- und 3 Werte-Slots. Sind sie voll, gibt es nur noch Upgrades.':'Only these items can appear in a run. You have 3 ability and 3 stat slots per run. Once they are full, you only get upgrades.',
  'Fähigkeiten':'Abilities','Werte':'Stats','Wie heißt du?':"What's your name?",'Dein Name erscheint in der Bestenliste neben deinem höchsten Score.':'Your name appears on the leaderboard next to your best score.',
@@ -2514,12 +2514,24 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{if(L.has(e.key))keys.left=false;if(R.has(e.key))keys.right=false});
 addEventListener('blur',()=>{keys.left=keys.right=false;if(state==='play')pause()});
-let touchId=null;
-let touchY0=0,swiped=false;
-cv.addEventListener('pointerdown',e=>{audioOn();if(state!=='play')return;const r=cv.getBoundingClientRect();touchId=e.pointerId;touchY0=e.clientY;swiped=false;const left=e.clientX-r.left<r.width/2;keys.left=left;keys.right=!left;cv.setPointerCapture(e.pointerId)});
-cv.addEventListener('pointermove',e=>{if(e.pointerId!==touchId)return;const r=cv.getBoundingClientRect();if(!swiped&&touchY0-e.clientY>r.height*.08){swiped=true;airJump()}const left=e.clientX-r.left<r.width/2;keys.left=left;keys.right=!left});
-const endTouch=e=>{if(e.pointerId!==touchId)return;touchId=null;keys.left=keys.right=false};
-cv.addEventListener('pointerup',endTouch);cv.addEventListener('pointercancel',endTouch);
+/* Touch: neuester Lenk-Finger lenkt · nach oben wischen (beliebig oft pro Halten) = Doppelsprung
+   · zweiter Finger auf derselben Seite = Doppelsprung, auf der anderen Seite = Richtungswechsel */
+const touches=new Map();
+const sideOf=x=>{const r=cv.getBoundingClientRect();return x-r.left<r.width/2?'l':'r'};
+const steerId=()=>{let id=null;for(const [k,t] of touches)if(!t.jumpOnly)id=k;return id};
+const applySteer=()=>{const id=steerId();if(id===null){keys.left=keys.right=false;return}const sd=sideOf(touches.get(id).x);keys.left=sd==='l';keys.right=sd==='r'};
+cv.addEventListener('pointerdown',e=>{audioOn();if(state!=='play')return;e.preventDefault();if(e.isPrimary)touches.clear();
+ const t={y0:e.clientY,t0:performance.now(),x:e.clientX,jumpOnly:false};
+ const cur=steerId();
+ if(cur!==null&&sideOf(touches.get(cur).x)===sideOf(e.clientX)){t.jumpOnly=true;airJump()}
+ touches.set(e.pointerId,t);applySteer();
+ try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{const t=touches.get(e.pointerId);if(!t)return;const r=cv.getBoundingClientRect(),now=performance.now();
+ if(e.clientY>t.y0||now-t.t0>260){t.y0=e.clientY;t.t0=now}
+ if(t.y0-e.clientY>r.height*.035){airJump();t.y0=e.clientY;t.t0=now}
+ t.x=e.clientX;applySteer()});
+const endTouch=e=>{if(touches.delete(e.pointerId))applySteer()};
+cv.addEventListener('pointerup',endTouch);cv.addEventListener('pointercancel',endTouch);addEventListener('pointerup',endTouch);addEventListener('pointercancel',endTouch);
 
 /* ================= LOOP ================= */
 let last=performance.now();

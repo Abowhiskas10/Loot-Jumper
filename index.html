@@ -174,6 +174,22 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 .pausebtn:active{background:var(--panel2)}
 /* Character select */
 .ov>*{flex-shrink:0}
+.tut-css{}
+#tutLayer{position:absolute;inset:0;z-index:6;background:rgba(6,8,12,.28);cursor:pointer}
+#tutBox{position:absolute;left:50%;transform:translateX(-50%);width:min(88%,24em);background:rgba(10,13,19,.95);border:1px solid var(--line);border-top:4px solid var(--teal);border-radius:.6em;padding:.8em 1em .75em;text-align:left;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:tin .25s ease-out}
+#tutBox b{display:block;font-family:var(--display);font-size:1.15em;color:var(--teal);margin-bottom:.25em}
+#tutBox p{margin:0;font-size:.92em;line-height:1.45;color:var(--text);max-width:none}
+#tutBox .tutgo{display:block;margin-top:.6em;font-size:.72em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);animation:tutp 1.4s ease-in-out infinite}
+@keyframes tutp{50%{opacity:.45}}
+html.touch .k-only,html:not(.touch) .t-only{display:none!important}
+html.touch .card kbd{display:none}
+.tipline{font-size:.76em;line-height:1.45;max-width:26em;text-align:left;background:rgba(10,13,19,.7);border-left:3px solid var(--teal);border-radius:.4em;padding:.45em .7em;color:var(--text)!important}
+.tipline b{color:var(--teal)}
+.fbcats{display:flex;gap:.45em;flex-wrap:wrap;justify-content:center}
+.fbcats .pre{--pc:var(--muted);cursor:pointer}
+.fbcats .pre.on{--pc:var(--gold);background:var(--panel2)}
+.fbtxt{font:inherit;font-size:.92em;line-height:1.4;padding:.6em .75em;border-radius:.5em;border:2px solid var(--ink);background:var(--panel);color:var(--text);box-shadow:inset 0 0 0 1px var(--line);width:min(100%,22em);resize:vertical;min-height:7.5em}
+.fbtxt:focus{outline:3px solid var(--gold);outline-offset:1px}
 .chars{display:flex;gap:.45em;overflow-x:auto;width:100%;padding:.2em .1em .5em;scroll-snap-type:x mandatory}
 .charcard{flex:none;width:5.2em;scroll-snap-align:start;background:var(--panel);border:2px solid var(--ink);border-radius:.55em;padding:.3em .2em;display:flex;flex-direction:column;align-items:center;gap:.15em;box-shadow:inset 0 0 0 1px var(--line)}
 .charcard img{width:3.4em;height:3.4em}
@@ -248,6 +264,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
   </div>
   <div id="bossbar" hidden><div class="bn" id="bN">Steingolem</div><div class="bb"><i id="bHp"></i></div></div>
   <div id="banner"><div class="z1" id="bz1">Zone</div><div class="z2" id="bz2">Felsige Tiefen</div></div>
+  <div id="tutLayer" hidden><div id="tutBox"><b id="tutTitle"></b><p id="tutTx"></p><span class="tutgo" id="tutGo"></span></div></div>
   <div id="toasts"></div>
 
   <!-- Main menu -->
@@ -267,7 +284,8 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
       <button class="btn" id="bColl">Sammlung</button>
       <button class="btn" id="bSet">Einstellungen</button>
     </div>
-    <div class="hint"><kbd>A</kbd> <kbd>D</kbd> oder <kbd>←</kbd> <kbd>→</kbd> bewegen · Springen und Schießen passieren automatisch<br><kbd>W</kbd> / <kbd>↑</kbd> Doppelsprung (mit Wolkenstiefel)<br>Handy: linke/rechte Hälfte halten · nach oben wischen oder 2. Finger auf derselben Seite = Doppelsprung · <b>II</b> = Pause · <kbd>P</kbd> Pause · <kbd>M</kbd> Ton</div>
+    <div class="hint k-only"><kbd>A</kbd> <kbd>D</kbd> oder <kbd>←</kbd> <kbd>→</kbd> bewegen · Springen und Schießen passieren automatisch<br><kbd>W</kbd> / <kbd>↑</kbd> Doppelsprung (mit Wolkenstiefel)<br><kbd>P</kbd> Pause · <kbd>M</kbd> Ton</div>
+    <div class="hint t-only">Linke oder rechte Hälfte halten = lenken<br>Springen und Schießen passieren automatisch<br>Nach oben wischen = Doppelsprung (mit Wolkenstiefel) · <b>II</b> = Pause</div>
   </div>
 
 
@@ -337,6 +355,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
       <label class="vol" for="volSfx"><span>Effekte</span><input type="range" id="volSfx" min="0" max="100" step="5"><b id="volSfxV">80%</b></label>
       <button class="btn" id="bShake">Bildschirmwackeln: an</button>
       <button class="btn" id="bLang">Sprache: Deutsch</button>
+      <button class="btn" id="bTips">Tipps: an</button>
       <button class="btn" id="bName">Name ändern</button>
       <button class="btn" id="bReset">Spielstand zurücksetzen</button>
       <button class="btn" data-back>Zurück</button>
@@ -347,7 +366,8 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
   <!-- Loot choice -->
   <div class="ov" id="scrLoot" hidden>
     <h2 id="lootTitle">Beute!</h2>
-    <p id="lootSub" class="hint">Wähle eine Verbesserung · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
+    <p id="lootSub" class="hint">Wähle eine Verbesserung</p>
+    <p class="tipline" id="lootTip" hidden></p>
     <div class="cards" id="lootCards"></div>
     <button class="skip" id="bSkip">Überspringen und 15 Münzen nehmen</button>
   </div>
@@ -396,10 +416,11 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
         <button class="pre" id="devChars" style="--pc:var(--teal)">Alle Charaktere freischalten</button>
       </div>
     </details>
-    <p class="hint"><kbd>Esc</kbd> oder <kbd>P</kbd> zum Weiterspielen</p>
+    <p class="hint k-only"><kbd>Esc</kbd> oder <kbd>P</kbd> zum Weiterspielen</p>
     <div class="btns">
       <button class="btn main" id="bResume">Weiter</button>
       <button class="btn" id="bQuit">Run beenden</button>
+      <button class="btn" id="pFb">Fehler melden / Feedback</button>
     </div>
   </div>
 
@@ -414,6 +435,25 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
     <div class="btns">
       <button class="btn main" id="bAgain">Neuer Run</button>
       <button class="btn" id="bMenu">Hauptmenü</button>
+      <button class="btn" id="bFb">Fehler melden / Feedback</button>
+    </div>
+  </div>
+
+  <!-- Feedback -->
+  <div class="ov" id="scrFb" hidden>
+    <h2>Feedback</h2>
+    <p>Fehler gefunden oder eine Idee? Schreib es kurz auf.</p>
+    <div class="fbcats" role="group" aria-label="Art des Feedbacks">
+      <button class="pre on" data-fbc="bug">Fehler</button>
+      <button class="pre" data-fbc="idea">Vorschlag</button>
+      <button class="pre" data-fbc="other">Sonstiges</button>
+    </div>
+    <textarea id="fbText" class="fbtxt" maxlength="1000" placeholder="Was ist passiert? Was würdest du ändern?" aria-label="Feedback-Text"></textarea>
+    <p class="hint">Zone, Höhe, Charakter, Build und Gerät werden automatisch mitgeschickt.</p>
+    <p class="hint" id="fbStatus" style="min-height:1.2em"></p>
+    <div class="btns">
+      <button class="btn main" id="bFbSend">Senden</button>
+      <button class="btn" id="bFbBack">Zurück</button>
     </div>
   </div>
 
@@ -422,7 +462,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
     <div class="tag" id="reelTag">Truhe</div>
     <h2 id="reelTitle">Truhe öffnet sich</h2>
     <div class="reel" id="reel" role="img" aria-label="Item-Walze"><div class="strip" id="strip"></div><div class="marker"></div></div>
-    <p class="hint" id="reelHint">Klicken oder <kbd>Leertaste</kbd> zum Überspringen</p>
+    <p class="hint" id="reelHint"><span class="k-only">Klicken oder <kbd>Leertaste</kbd> zum Überspringen</span><span class="t-only">Tippen zum Überspringen</span></p>
     <div class="reveal" id="reelResult"></div>
     <div class="btns"><button class="btn main" id="reelBtn" hidden>Weiter</button></div>
   </div>
@@ -431,6 +471,8 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 <script>
 (()=>{
 'use strict';
+const IS_TOUCH=(()=>{try{return matchMedia('(pointer:coarse)').matches}catch(e){return false}})();
+document.documentElement.classList.toggle('touch',IS_TOUCH);
 /* ================= SPRACHE / LANGUAGE (Deutsch ist die Quelle, Englisch per Tabelle) ================= */
 let LANG='de';
 // Texte aus Code und HTML: deutscher Originaltext -> englisch
@@ -594,6 +636,7 @@ function translateStatic(root){
 function applyLang(lang){
  if(lang)LANG=lang;document.documentElement.lang=LANG;
  applyLangData();translateStatic(document.getElementById('stage'));
+ if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.');
  if(typeof hudCache!=='undefined')hudCache={};
 }
 
@@ -757,9 +800,10 @@ function bossDef(i){const b=BOSSES[i];if(!b)return null;return{...b,h:BOSS_H[i],
 
 /* ================= SAVE ================= */
 const SAVE_KEY='lootjumper.save.v1';
-const DEFAULT_SAVE=()=>({lang:((navigator.language||'de').toLowerCase().startsWith('de')?'de':'en'),char:'abenteurer',chars:['abenteurer'],bossCount:{},totalCoins:0,name:'',pid:'',localBoard:[],coins:0,record:0,unlocked:START_UNLOCKED.slice(),bosses:0,bossFirst:{},runs:0,kills:0,sound:true,shake:true,musVol:60,sfxVol:80,pool:START_UNLOCKED.slice(0,POOL_MAX)});
+const DEFAULT_SAVE=()=>({tips:true,tipSeen:{},lang:((navigator.language||'de').toLowerCase().startsWith('de')?'de':'en'),char:'abenteurer',chars:['abenteurer'],bossCount:{},totalCoins:0,name:'',pid:'',localBoard:[],coins:0,record:0,unlocked:START_UNLOCKED.slice(),bosses:0,bossFirst:{},runs:0,kills:0,sound:true,shake:true,musVol:60,sfxVol:80,pool:START_UNLOCKED.slice(0,POOL_MAX)});
 let save=DEFAULT_SAVE();
-function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(s)save=Object.assign(DEFAULT_SAVE(),s)}catch(e){}for(const id of START_UNLOCKED)if(!save.unlocked.includes(id))save.unlocked.push(id);if(!Array.isArray(save.chars))save.chars=['abenteurer'];if(!save.chars.includes('abenteurer'))save.chars.unshift('abenteurer');save.unlocked=save.unlocked.filter(id=>IT[id]);save.pool=validPool(save.pool)}
+function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(s)save=Object.assign(DEFAULT_SAVE(),s)}catch(e){}for(const id of START_UNLOCKED)if(!save.unlocked.includes(id))save.unlocked.push(id);if(!Array.isArray(save.chars))save.chars=['abenteurer'];if(!save.chars.includes('abenteurer'))save.chars.unshift('abenteurer');save.unlocked=save.unlocked.filter(id=>IT[id]);save.pool=validPool(save.pool);
+ if(save.runs>0&&!save.tipMig){save.tipMig=1;for(const k of ['move','fall','enemy','chest','loot','pu','event'])save.tipSeen[k]=1}}
 function validPool(pool){let p=(pool||[]).filter(id=>IT[id]&&save.unlocked.includes(id)).slice(0,POOL_MAX);
  for(const id of FILLER.concat(save.unlocked)){if(p.length>=POOL_MIN)break;if(save.unlocked.includes(id)&&!p.includes(id))p.push(id)}return p}
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(e){}}
@@ -944,7 +988,7 @@ function newRun(){
  addPlat(W/2-70,30,140,'normal');
  while(G.nextY>G.camY-220)genRow();
  $('hTest').hidden=true;
- save.runs++;persist();Music.set('run');Music.setDuck(false);
+ save.runs++;persist();tutReset();Music.set('run');Music.setDuck(false);
  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
  setScreen(null);state='play';
  $('hud').hidden=false;
@@ -1362,6 +1406,7 @@ function update(dt){
  // pending loot after boss
  if(G.pendingLoot>0){G.pendingLoot-=dt;if(G.pendingLoot<=0){const b=G.pendingBias;G.pendingBias=null;b==='boss'?openShop():openLoot(b);return}}
  // input & movement
+ tipTick(dt);
  const dir=(keys.left?-1:0)+(keys.right?1:0);
  if(dir)p.face=dir;
  p.vx+=(dir*st.speed-p.vx)*Math.min(1,dt*13);
@@ -1872,6 +1917,7 @@ function render(){
  ctx.globalAlpha=1;ctx.textAlign='center';
  for(const t of G.texts){ctx.globalAlpha=Math.min(1,t.life/t.max*2);ctx.font=`700 ${t.size}px "Chakra Petch",sans-serif`;ctx.lineWidth=3;ctx.strokeStyle=C.ink;ctx.strokeText(t.s,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.s,t.x,t.y)}
  ctx.globalAlpha=1;ctx.textAlign='left';
+ if(state==='tut'&&tut&&tut.tgt)drawTutMark();
  // danger vignette at bottom
  ctx.setTransform(scale,0,0,scale,0,0);
  const p=G.p,low=clamp((p.y-(G.camY+H*.75))/(H*.25),0,1);
@@ -2068,7 +2114,7 @@ function openLoot(bias){
  if(!lootChoices.length){G.coinF+=25;G.coinsRun=Math.floor(G.coinF);toast(tr('Build komplett: +25 Münzen'),'gold');return}
  state='loot';SFX.loot();keys.left=keys.right=false;
  $('lootTitle').textContent=tr('Beute!');
- $('lootSub').innerHTML=`${slotLine()} · ${tr('Wähle mit')} <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>`;
+ $('lootSub').innerHTML=IS_TOUCH?slotLine():`${slotLine()} · ${tr('Wähle mit')} <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>`;
  const box=$('lootCards');box.innerHTML='';
  box.className='cards'+(lootChoices.some(i=>i.r>=3)?' legend':'');
  if(lootChoices.some(i=>i.r>=3||i.evo))SFX.legend();
@@ -2077,6 +2123,7 @@ function openLoot(bias){
   b.innerHTML=it.evo?evoCard(it.evo,i+1):cardInner(it,i+1);
   b.onclick=()=>chooseLoot(i);box.appendChild(b);
  });
+ showInlineTip('lootTip','loot');
  setScreen('scrLoot');setTimeout(()=>{const f=$('loot0');if(f)f.focus({preventScroll:true})},50);
 }
 function synHint(it){return SYN.filter(s=>s.req.includes(it.id)&&!st.syn[s.id]&&s.req.every(r=>r===it.id||G.items[r])).map(s=>`<div class="ds new">${tr('Aktiviert Synergie:')} ${s.name} (${s.d})</div>`).join('')}
@@ -2263,8 +2310,9 @@ function leaveShop(){$('shopTag').textContent=tr('Nach dem Bosskampf');$('shopTi
 /* ---- Zonen-Mechanik: aufsteigende Giftflut in den Giftigen Höhen ---- */
 const TIDE_ZONE=2;
 function zoneEnter(zi){
- if(zi===DARK_ZONE)setTimeout(()=>{if(G&&G.zone===DARK_ZONE)toast(tr('Himmelsfestung: Nur der nächste Block ist sichtbar.'),'gold')},1600);
- if(zi===TIDE_ZONE){G.tide={y:G.camY+H+90,startH:G.maxH,drain:false};setTimeout(()=>{if(G&&G.tide)toast(tr('Die Giftflut steigt! Bleib in Bewegung.'),'gold')},1600)}
+ const zt=tipSeen('zone'+zi)||save.tips===false;if(ZONE_TIPS[zi]&&!zt){G.zoneTip=zi;G.zoneTipT=1.3}
+ if(zi===DARK_ZONE&&zt)setTimeout(()=>{if(G&&G.zone===DARK_ZONE)toast(tr('Himmelsfestung: Nur der nächste Block ist sichtbar.'),'gold')},1600);
+ if(zi===TIDE_ZONE){G.tide={y:G.camY+H+90,startH:G.maxH,drain:false};if(zt)setTimeout(()=>{if(G&&G.tide)toast(tr('Die Giftflut steigt! Bleib in Bewegung.'),'gold')},1600)}
  else if(G.tide)G.tide.drain=true;
 }
 function updateTide(dt){const t=G.tide,p=G.p;if(!t)return;
@@ -2385,14 +2433,139 @@ $('devChars').onclick=()=>{for(const c of CHARS)if(!save.chars.includes(c.id))sa
 $('devGod').onclick=()=>{if(!G)return;markTest();G.god=!G.god;buildDev()};
 function quitRun(){if(!G)return;state='play';die(tr('Aufgegeben'))}
 
+Object.assign(EN_TXT,{
+ 'Tipp':'Tip','Tipps: ':'Tips: ','Tutorial wiederholen':'Replay tutorial','Fehler melden / Feedback':'Report bug / Feedback','Feedback':'Feedback',
+ 'Fehler gefunden oder eine Idee? Schreib es kurz auf.':'Found a bug or have an idea? Write a few lines.',
+ 'Fehler':'Bug','Vorschlag':'Suggestion','Sonstiges':'Other','Art des Feedbacks':'Feedback type','Feedback-Text':'Feedback text',
+ 'Was ist passiert? Was würdest du ändern?':'What happened? What would you change?',
+ 'Zone, Höhe, Charakter, Build und Gerät werden automatisch mitgeschickt.':'Zone, height, character, build and device are sent automatically.',
+ 'Senden':'Send','Zurück':'Back',
+ 'Hinweis: Senden funktioniert nur in der Online-Version (GitHub-Link).':'Note: sending only works in the online version (GitHub link).',
+ 'Bitte schreib mindestens ein paar Wörter.':'Please write at least a few words.',
+ 'Hier offline: Bitte im GitHub-Link senden.':'Offline here: please send from the GitHub link.',
+ 'Wird gesendet …':'Sending …','Danke! Dein Feedback ist angekommen.':'Thanks! Your feedback was received.','Danke für dein Feedback!':'Thanks for your feedback!',
+ 'Senden fehlgeschlagen. Bitte später nochmal versuchen.':'Sending failed. Please try again later.',
+ 'Tutorial wird im nächsten Run wieder angezeigt.':'The tutorial will be shown again in your next run.',
+ 'Halte die linke oder rechte Bildschirmhälfte, um zu lenken. Springen und Schießen passieren automatisch.':'Hold the left or right half of the screen to steer. Jumping and shooting happen automatically.',
+ 'Lenke mit A / D oder ← / →. Springen und Schießen passieren automatisch.':'Steer with A / D or ← / →. Jumping and shooting happen automatically.',
+ 'Klettere so hoch wie möglich. Fällst du unten aus dem Bild, ist der Run vorbei.':'Climb as high as you can. If you fall off the bottom of the screen, the run is over.',
+ 'Ein Gegner! Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.':'An enemy! Your weapon aims on its own. Touching enemies or getting shot costs health.',
+ 'Eine Truhe! Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.':'A chest! Touch it to open it, then pick one of three upgrades.',
+ 'Ein Power-up! Sammle es ein, dann wirkt es für kurze Zeit, zum Beispiel als Magnet oder Schild.':'A power-up! Collect it for a short boost, such as a magnet or a shield.',
+ 'Ein Ereignis! Berühre das Symbol auf der Plattform, um ein Zufallsereignis mit einer Entscheidung auszulösen.':'An event! Touch the symbol on the platform to trigger a random event with a choice.',
+ 'Doppelsprung freigeschaltet: In der Luft nach oben wischen oder mit einem zweiten Finger auf derselben Seite tippen.':'Double jump unlocked: in mid-air, swipe up or tap a second finger on the same side.',
+ 'Doppelsprung freigeschaltet: In der Luft W, ↑ oder Leertaste drücken.':'Double jump unlocked: press W, ↑ or Space in mid-air.',
+ 'Bosskampf! Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.':'Boss fight! Dodge the attacks, your weapons hit automatically. A merchant awaits afterwards.',
+ 'Giftsumpf: Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.':'Poison swamp: a poison flood rises from below. Keep moving and climb fast.',
+ 'Sturmregion: Blitze schlagen ein. Wo es aufleuchtet, schlägt gleich ein Blitz ein. Weich aus!':'Storm region: lightning strikes. Where it flashes, a bolt is about to hit. Dodge!',
+ 'Inferno: Jede Plattform verbrennt, nachdem du einmal darauf gesprungen bist.':'Inferno: every platform burns up after you jump on it once.',
+ 'Himmelsfestung: Nur der nächste Block ist sichtbar. Benutzte Blöcke werden unsichtbar, bleiben aber stehen.':'Sky Fortress: only the next block is visible. Used blocks turn invisible but stay solid.',
+ '<b>Tipp:</b> Du hast nur wenige Slots für Fähigkeiten und Werte, also spezialisiere dich. Nimmst du ein Item erneut, steigt es eine Stufe auf. Passende Items lösen Synergien aus, ein Item auf Maximalstufe plus Partner ergibt eine Entwicklung.':'<b>Tip:</b> You only have a few slots for abilities and stats, so specialise. Taking an item again levels it up. Matching items trigger synergies, and a max-level item plus its partner becomes an evolution.',
+ '<b>Tipp:</b> Nach jedem Boss kommt der Händler. Hier kaufst du mit den Münzen dieses Runs neue Items oder Heilung.':'<b>Tip:</b> A merchant appears after every boss. Spend this run\'s coins on new items or healing.'
+});
+Object.assign(EN_TXT,{
+ 'Steuerung':'Controls','Gegner':'Enemy','Truhe':'Chest','Doppelsprung':'Double jump','Bosskampf':'Boss fight','Giftsumpf':'Poison Swamp','Sturmregion':'Storm Region','Inferno':'Inferno','Himmelsfestung':'Sky Fortress',
+ 'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Hold the left or right half of the screen to steer.',
+ 'Lenke mit A / D oder ← / →.':'Steer with A / D or ← / →.',
+ 'Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.':'Jumping and shooting happen automatically. If you fall off the bottom of the screen, the run is over.',
+ 'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.':'Your weapon aims on its own. Touching enemies or getting shot costs health.',
+ 'Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.':'Touch it to open it, then pick one of three upgrades.',
+ 'Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.':'In mid-air, swipe up or tap a second finger on the same side.',
+ 'Drücke in der Luft W, ↑ oder Leertaste.':'Press W, ↑ or Space in mid-air.',
+ 'Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.':'Dodge the attacks, your weapons hit automatically. A merchant awaits afterwards.',
+ 'Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.':'A poison flood rises from below. Keep moving and climb fast.',
+ 'Wo es aufleuchtet, schlägt gleich ein Blitz ein. Weich aus!':'Where it flashes, lightning is about to strike. Dodge!',
+ 'Jede Plattform verbrennt, nachdem du einmal darauf gesprungen bist.':'Every platform burns up after you jump on it once.',
+ 'Nur der nächste Block ist sichtbar. Benutzte Blöcke werden unsichtbar, bleiben aber stehen.':'Only the next block is visible. Used blocks turn invisible but stay solid.',
+ 'Tippen zum Weiterspielen':'Tap to continue','Taste drücken oder klicken zum Weiterspielen':'Press a key or click to continue',
+ 'Tipps an: Alle Erklärungen werden wieder angezeigt.':'Tips on: all explanations will be shown again.',
+ 'Tippen zum Überspringen':'Tap to skip',
+ 'Linke oder rechte Hälfte halten = lenken':'Hold left or right half = steer',
+ 'Springen und Schießen passieren automatisch':'Jumping and shooting happen automatically',
+ 'Nach oben wischen = Doppelsprung (mit Wolkenstiefel) ·':'Swipe up = double jump (with Cloud Boots) ·',
+ 'Doppelsprung (mit Wolkenstiefel)':'double jump (with Cloud Boots)','Pause ·':'pause ·','Wähle eine Verbesserung':'Choose an upgrade',
+ 'Doppelsprung: Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.':'Double jump: in mid-air, swipe up or tap a second finger on the same side.'
+});
+/* ================= TUTORIAL ================= */
+// Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
+const GAME_VER='0.9.4';
+const TUTS={
+ move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
+ enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
+ chest:{title:'Truhe',tx:()=>'Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.'},
+ dj:{title:'Doppelsprung',tx:()=>IS_TOUCH?'Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.':'Drücke in der Luft W, ↑ oder Leertaste.'},
+ boss:{title:'Bosskampf',tx:()=>'Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.'},
+ zone2:{title:'Giftsumpf',tx:()=>'Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.'},
+ zone3:{title:'Sturmregion',tx:()=>'Wo es aufleuchtet, schlägt gleich ein Blitz ein. Weich aus!'},
+ zone4:{title:'Inferno',tx:()=>'Jede Plattform verbrennt, nachdem du einmal darauf gesprungen bist.'},
+ zone5:{title:'Himmelsfestung',tx:()=>'Nur der nächste Block ist sichtbar. Benutzte Blöcke werden unsichtbar, bleiben aber stehen.'}
+};
+const ZONE_TIPS={2:1,3:1,4:1,5:1};
+const INLINE_TIPS={
+ loot:'<b>Tipp:</b> Du hast nur wenige Slots für Fähigkeiten und Werte, also spezialisiere dich. Nimmst du ein Item erneut, steigt es eine Stufe auf. Passende Items lösen Synergien aus, ein Item auf Maximalstufe plus Partner ergibt eine Entwicklung.'
+};
+let tut=null;
+function tipSeen(k){return !!(save.tipSeen&&save.tipSeen[k])}
+function markTip(k){save.tipSeen=save.tipSeen||{};save.tipSeen[k]=1;persist()}
+function tutReset(){tut=null;$('tutLayer').hidden=true}
+function tutShow(k,tgt){
+ if(save.tips===false||tipSeen(k)||state!=='play'||!TUTS[k])return false;
+ markTip(k);tut={k,tgt,t0:performance.now()};state='tut';keys.left=keys.right=false;try{touches.clear()}catch(e){}
+ $('tutTitle').textContent=tr(TUTS[k].title);$('tutTx').textContent=tr(TUTS[k].tx());
+ $('tutGo').textContent=IS_TOUCH?tr('Tippen zum Weiterspielen'):tr('Taste drücken oder klicken zum Weiterspielen');
+ const box=$('tutBox'),f=tgt?(tgt.y-G.camY)/H:.6;
+ if(f<.5){box.style.top='';box.style.bottom='14%'}else{box.style.bottom='';box.style.top=(tgt?13:30)+'%'}
+ $('tutLayer').hidden=false;beep(660,.08,'sine',.04,200);return true}
+function tutClose(){if(state!=='tut'||!tut||performance.now()-tut.t0<450)return;tut=null;$('tutLayer').hidden=true;state='play';last=performance.now()}
+$('tutLayer').addEventListener('pointerdown',e=>{e.preventDefault();tutClose()});
+function drawTutMark(){const g=tut.tgt,x=g.x,y=g.y-(g===G.p?16:g.isBoss?0:10),r=(g.r||18)+20,k=performance.now()/1000;
+ ctx.save();ctx.strokeStyle='#5fe0c8';ctx.lineWidth=3;ctx.globalAlpha=.9;ctx.setLineDash([8,6]);ctx.lineDashOffset=-k*30;
+ ctx.beginPath();ctx.arc(x,y,r+Math.sin(k*5)*3,0,7);ctx.stroke();ctx.setLineDash([]);
+ const up=(y-G.camY)/H<.5,dir=up?1:-1,ay=y+dir*(r+14+Math.sin(k*6)*5);
+ ctx.fillStyle='#5fe0c8';ctx.strokeStyle='#0a0d13';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,ay);ctx.lineTo(x-11,ay+dir*16);ctx.lineTo(x-4,ay+dir*16);ctx.lineTo(x-4,ay+dir*30);ctx.lineTo(x+4,ay+dir*30);ctx.lineTo(x+4,ay+dir*16);ctx.lineTo(x+11,ay+dir*16);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+function showInlineTip(id,k){const el=$(id);if(save.tips!==false&&!tipSeen(k)){markTip(k);el.innerHTML=tr(INLINE_TIPS[k]);el.hidden=false}else el.hidden=true}
+const onScr=y=>y>G.camY+30&&y<G.camY+H-90;
+function tipTick(dt){
+ if(save.tips===false)return;
+ if(G.t>.45&&tutShow('move',G.p))return;
+ if(st.doppelsprung&&tutShow('dj',G.p))return;
+ if(G.boss&&!tipSeen('boss')&&G.boss.y>G.camY+60&&tutShow('boss',G.boss))return;
+ if(!tipSeen('enemy')){const e=G.enemies.find(e=>!e.dead&&onScr(e.y));if(e&&tutShow('enemy',e))return}
+ if(!tipSeen('chest')){const c=G.chests.find(c=>onScr(c.y));if(c&&tutShow('chest',c))return}
+ if(G.zoneTip!=null){G.zoneTipT-=dt;if(G.zoneTipT<=0){const z=G.zoneTip;G.zoneTip=null;if(G.zone===z&&!G.arena)tutShow('zone'+z,null)}}
+}
+function syncTipBtn(){$('bTips').textContent=tr('Tipps: ')+(save.tips!==false?tr('an'):tr('aus'))}
+$('bTips').onclick=()=>{save.tips=save.tips===false;if(save.tips){save.tipSeen={};save.tipMig=1;toast(tr('Tipps an: Alle Erklärungen werden wieder angezeigt.'))}persist();syncTipBtn()};
+
+/* ================= FEEDBACK ================= */
+let fbKind='bug',fbFrom='scrMenu';
+document.querySelectorAll('[data-fbc]').forEach(b=>b.onclick=()=>{fbKind=b.dataset.fbc;document.querySelectorAll('[data-fbc]').forEach(x=>x.classList.toggle('on',x===b))});
+function openFb(from){fbFrom=from;$('fbStatus').textContent=ONLINE?'':tr('Hinweis: Senden funktioniert nur in der Online-Version (GitHub-Link).');$('bFbSend').disabled=false;setScreen('scrFb');setTimeout(()=>$('fbText').focus({preventScroll:true}),40)}
+function fbBack(){setScreen(fbFrom);if(fbFrom==='scrPause'&&G)$('pBuild').innerHTML=chipsHTML(G.items)||tr('<p class="hint">Noch keine Items in diesem Run.</p>')}
+function fbContext(){const c={v:GAME_VER,lang:LANG,touch:IS_TOUCH,screen:innerWidth+'x'+innerHeight,ua:navigator.userAgent.slice(0,240),runs:save.runs,record:save.record,from:fbFrom==='scrPause'?'pause':'gameover'};
+ if(G){c.char=G.char;c.zone=G.zone+1;c.height=Math.floor(G.maxH);c.cause=G.cause||'';c.time=Math.round(G.t);c.items=Object.entries(G.items).map(([k,v])=>v>1?k+'x'+v:k);c.test=!!G.test;c.bosses=G.bossKills.length}
+ return c}
+async function sendFb(){const msg=$('fbText').value.trim();
+ if(msg.length<3){$('fbStatus').textContent=tr('Bitte schreib mindestens ein paar Wörter.');return}
+ if(!ONLINE){$('fbStatus').textContent=tr('Hier offline: Bitte im GitHub-Link senden.');return}
+ if(!save.pid)save.pid=uuid(),persist();
+ $('bFbSend').disabled=true;$('fbStatus').textContent=tr('Wird gesendet …');
+ try{const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/rpc/submit_feedback',{method:'POST',headers:sbHeaders(),body:JSON.stringify({p_player:save.pid,p_name:save.name||'',p_kind:fbKind,p_message:msg.slice(0,1000),p_ctx:fbContext()})});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  $('fbText').value='';$('fbStatus').textContent=tr('Danke! Dein Feedback ist angekommen.');toast(tr('Danke für dein Feedback!'),'gold');setTimeout(()=>{if(!$('scrFb').hidden)fbBack()},1100)}
+ catch(e){$('fbStatus').textContent=tr('Senden fehlgeschlagen. Bitte später nochmal versuchen.');$('bFbSend').disabled=false}
+}
+$('bFb').onclick=()=>openFb('scrOver');$('pFb').onclick=()=>openFb('scrPause');
+$('bFbSend').onclick=sendFb;$('bFbBack').onclick=fbBack;
+
 /* ================= MENUS ================= */
-const screens=['scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
+const screens=['scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
 function setScreen(id){for(const s of screens)$(s).hidden=s!==id}
 function toMenu(){Music.set('menu');Music.setDuck(false);state='menu';G=null;$('hud').hidden=true;$('bossbar').hidden=true;refreshMenu();setScreen('scrMenu')}
 function syncSettings(){for(const [id,key] of VOLS){if(document.activeElement!==$(id))$(id).value=save[key];$(id+'V').textContent=save[key]+'%'}
  const lt=LANG==='en'?'Language: English':'Sprache: Deutsch';$('bLang').textContent=lt;$('pLang').textContent=lt;$('bLangMenu').textContent=LANG==='en'?'DE':'EN';
  const a=tr('Ton: ')+(save.sound?tr('an'):tr('aus')),b=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'));$('bSound').textContent=a;$('pSound').textContent=a;$('bShake').textContent=b;$('pShake').textContent=b}
-function refreshMenu(){syncSettings();$('mRec').textContent=save.record+' m';$('mCoins').textContent=save.coins;$('mUnl').textContent=save.unlocked.length+'/'+ITEMS.length;$('bSound').textContent=tr('Ton: ')+(save.sound?tr('an'):tr('aus'));$('bShake').textContent=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'))}
+function refreshMenu(){syncSettings();syncTipBtn();$('mRec').textContent=save.record+' m';$('mCoins').textContent=save.coins;$('mUnl').textContent=save.unlocked.length+'/'+ITEMS.length;$('bSound').textContent=tr('Ton: ')+(save.sound?tr('an'):tr('aus'));$('bShake').textContent=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'))}
 function buildChests(){
  $('cCoins').textContent=save.coins;
  const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
@@ -2472,6 +2645,7 @@ $('nameForm').addEventListener('submit',e=>{e.preventDefault();confirmName()});
 $('bGo').onclick=startFromLoadout;
 $('bShopGo').onclick=leaveShop;
 $('reel').onclick=()=>{if(reel)reel.skip()};
+$('scrReel').addEventListener('click',e=>{if(reel&&!e.target.closest('button'))reel.skip()});
 $('bChests').onclick=()=>{buildChests();$('reveal').innerHTML='<p class="hint">Truhen schalten Items dauerhaft frei. Sie landen danach im Loot-Pool deiner Runs.</p>';setScreen('scrChests')};
 $('bColl').onclick=()=>{buildColl();setScreen('scrColl')};
 $('bSet').onclick=()=>{buildLife();resetArm=false;$('bReset').textContent=tr('Spielstand zurücksetzen');setScreen('scrSet')};
@@ -2498,7 +2672,9 @@ function resume(){if(state!=='pause')return;Music.setDuck(false);setScreen(null)
 const keys={left:false,right:false};
 const L=new Set(['ArrowLeft','a','A']),R=new Set(['ArrowRight','d','D']);
 addEventListener('keydown',e=>{
- if(e.target&&e.target.id==='nameInput')return;
+ if(e.target&&(e.target.id==='nameInput'||e.target.id==='fbText')){if(e.key==='Escape'&&!$('scrFb').hidden){e.preventDefault();fbBack()}return}
+ if(!$('scrFb').hidden){if(e.key==='Escape'){e.preventDefault();fbBack()}return}
+ if(state==='tut'){e.preventDefault();if(!e.repeat)tutClose();return}
  audioOn();
  if(L.has(e.key)){keys.left=true;if(state==='play')e.preventDefault()}
  if(state==='play'&&(e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key===' ')){e.preventDefault();if(!e.repeat)airJump()}

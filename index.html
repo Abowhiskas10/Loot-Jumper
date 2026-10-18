@@ -2448,6 +2448,11 @@ const Board={
   const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/rpc/submit_score',{method:'POST',headers:sbHeaders(),body:JSON.stringify({p_player:save.pid,p_name:save.name,p_score:score,p_zone:zone})});
   if(!r.ok)throw new Error('HTTP '+r.status);
  },
+ async fetchMine(){
+  if(!ONLINE||!save.pid)throw new Error('offline');
+  const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/scores?select=score&player=eq.'+encodeURIComponent(save.pid),{headers:sbHeaders()});
+  if(!r.ok)throw new Error('HTTP '+r.status);const a=await r.json();return a.length?a[0].score:null;
+ },
  local(){return(save.localBoard||[]).slice().sort((a,b)=>b.score-a.score)},
  addLocal(score,zone){const L=save.localBoard||(save.localBoard=[]);const ex=L.find(e=>e.name===save.name);if(ex){if(score>ex.score){ex.score=score;ex.zone=zone}}else L.push({name:save.name,score,zone});L.sort((a,b)=>b.score-a.score);save.localBoard=L.slice(0,20);persist()},
 };
@@ -2478,13 +2483,16 @@ function confirmName(){const v=$('nameInput').value.replace(/\s+/g,' ').trim().s
  if(v.length<2){$('nameErr').textContent=tr('Bitte mindestens 2 Zeichen eingeben.');return}
  save.name=v;if(!save.pid)save.pid=uuid();persist();refreshMenu();
  const f=afterName;afterName=null;if(f)f();else setScreen('scrMenu')}
+// Online-Bestwert ist maßgeblich: Wurde ein Eintrag gelöscht/korrigiert, übernimmt das Gerät den Wert aus der Bestenliste
+function syncRecord(best){if(best==null||best>=save.record)return;save.record=best;persist();refreshMenu()}
+async function syncRecordOnline(){try{syncRecord(await Board.fetchMine())}catch(e){}}
 async function submitRun(){
  if(G.test||!save.name)return;
  const score=Math.floor(G.maxH),zone=G.zone+1;
  Board.addLocal(score,zone);
  if(!ONLINE){$('oBoard').textContent=tr('Lokale Bestenliste aktualisiert.');return}
  $('oBoard').textContent=tr('Score wird eingetragen …');
- try{await Board.submit(score,zone);const list=await Board.fetchTop();const i=list.findIndex(e=>e.player===save.pid);
+ try{await Board.submit(score,zone);await syncRecordOnline();const list=await Board.fetchTop();const i=list.findIndex(e=>e.player===save.pid);
   $('oBoard').textContent=i>=0?`${tr('Bestenliste: Platz')} ${i+1} ${tr('von')} ${list.length}`+(list[i].score>score?` (${tr('dein Bestwert:')} ${list[i].score} m)`:''):tr('Score eingetragen.')}
  catch(e){$('oBoard').textContent=tr('Bestenliste gerade nicht erreichbar. Dein Score ist lokal gespeichert.')}
 }
@@ -2909,6 +2917,7 @@ function setLang(l){save.lang=l;persist();applyLang(l);refreshMenu();try{buildLi
 const toggleLang=()=>setLang(LANG==='en'?'de':'en');
 $('bLang').onclick=toggleLang;$('pLang').onclick=toggleLang;$('bLangMenu').onclick=toggleLang;
 applyLang(save.lang||'de');
+if(ONLINE)syncRecordOnline();
 if(CFG.devMode===false)$('devBox').hidden=true; // Veröffentlichte Version: kein Testmodus
 refreshMenu();setScreen('scrMenu');
 requestAnimationFrame(frame);

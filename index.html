@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+<style>[hidden]{display:none!important}</style>
 <script>
 /* ===== BESTENLISTE: Hier deine Supabase-Daten eintragen (siehe ANLEITUNG.md) ===== */
 window.LJ_CONFIG = {
@@ -30,7 +30,7 @@ window.LJ_CONFIG = {
 html{height:100%;background:var(--bg)}
 body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:var(--body);overflow:hidden;
   display:grid;place-items:center;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:max(12px,env(safe-area-inset-top,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
 #stage{position:relative;width:300px;height:500px;font-size:calc(var(--u,1px)*15);border-radius:calc(var(--u,1px)*12);
   overflow:hidden;box-shadow:0 0 0 2px var(--line),0 24px 70px rgba(0,0,0,.55);user-select:none;-webkit-user-select:none;touch-action:none;background:var(--ink)}
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -253,6 +253,9 @@ html.touch .card kbd{display:none}
 #menuHero{position:static;inset:auto;width:8.5em;height:8.5em;margin:-.9em 0 -.6em}
 #scrMenu{background:radial-gradient(ellipse at 50% 42%,rgba(8,10,15,.25),rgba(8,10,15,.72) 75%);backdrop-filter:none;-webkit-backdrop-filter:none}
 @media (prefers-reduced-motion:reduce){.logo2 .chest,.logo2 .glint,.logo2 .arc{animation:none}}
+.legaltabs{display:flex;gap:.4em;justify-content:center}
+#legalFrame{width:100%;flex:1 1 auto;min-height:24em;border:2px solid var(--ink);border-radius:.6em;background:#0e1219;box-shadow:inset 0 0 0 1px var(--line)}
+#scrLegal>*{flex-shrink:1}
 .tipline{font-size:.76em;line-height:1.45;max-width:26em;text-align:left;background:rgba(10,13,19,.7);border-left:3px solid var(--teal);border-radius:.4em;padding:.45em .7em;color:var(--text)!important}
 .tipline b{color:var(--teal)}
 .fbcats{display:flex;gap:.45em;flex-wrap:wrap;justify-content:center}
@@ -455,6 +458,7 @@ html.touch .card kbd{display:none}
       <button class="btn" id="bNews">Was ist neu?</button>
       <button class="btn" id="bName">Name ändern</button>
       <button class="btn" id="bReset">Spielstand zurücksetzen</button>
+      <button class="btn" id="bLegal">Datenschutz &amp; Impressum</button>
       <button class="btn" data-back>Zurück</button>
     </div>
     <dl class="stats" id="lifeStats"></dl>
@@ -569,6 +573,13 @@ html.touch .card kbd{display:none}
     <h2>Was ist neu?</h2>
     <div class="news" id="newsBody"></div>
     <div class="btns"><button class="btn main" id="bNewsOk">Los geht's</button></div>
+  </div>
+
+  <!-- Datenschutz / Impressum -->
+  <div class="ov top" id="scrLegal" hidden>
+    <button class="back" id="bLegalBack">← Zurück</button>
+    <div class="legaltabs"><button class="wstab on" data-legal="datenschutz.html">Datenschutz</button><button class="wstab" data-legal="impressum.html">Impressum</button></div>
+    <iframe id="legalFrame" title="Datenschutz und Impressum"></iframe>
   </div>
 
   <!-- Sieg -->
@@ -2827,6 +2838,7 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Funkenspur':'Spark Trail','Blätterwirbel':'Leaf Swirl','Feuerschweif':'Fire Tail','Regenbogen':'Rainbow','Sternenstaub':'Stardust','Erreiche 5.000 m':'Reach 5,000 m',
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
+Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
 const GAME_VER='0.9.7';
@@ -3137,8 +3149,14 @@ function drawMenuHero(dt){const cv=$('menuHero');if(!cv||$('scrMenu').hidden)ret
  g.save();g.translate(0,MH.y+2);const up=clamp(-MH.vy/450,0,1)*(1-MH.sq);g.translate(0,-16);g.scale(1-up*.08,1+up*.12);g.translate(0,16);
  const cid=save.chars.includes(save.char)?save.char:'abenteurer';drawFigure(g,cid,1,MH.sq,MH.vy,MH.t,!!cosEq('hat'));drawHat(g,cosEq('hat'),cid,1,MH.sq,MH.t);g.restore()}
 
+/* ================= DATENSCHUTZ / IMPRESSUM ================= */
+function openLegal(page){$('legalFrame').src=page;document.querySelectorAll('[data-legal]').forEach(b=>b.classList.toggle('on',b.dataset.legal===page));setScreen('scrLegal')}
+$('bLegal').onclick=()=>openLegal('datenschutz.html');
+$('bLegalBack').onclick=()=>setScreen('scrSet');
+document.querySelectorAll('[data-legal]').forEach(b=>b.onclick=()=>openLegal(b.dataset.legal));
+
 /* ================= MENUS ================= */
-const screens=['scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
+const screens=['scrLegal','scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
 function setScreen(id){for(const s of screens)$(s).hidden=s!==id}
 function toMenu(){Music.set('menu');Music.setDuck(false);state='menu';G=null;$('hud').hidden=true;$('bossbar').hidden=true;refreshMenu();setScreen('scrMenu')}
 function syncSettings(){for(const [id,key] of VOLS){if(document.activeElement!==$(id))$(id).value=save[key];$(id+'V').textContent=save[key]+'%'}
@@ -3274,6 +3292,17 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{if(L.has(e.key))keys.left=false;if(R.has(e.key))keys.right=false});
 addEventListener('blur',()=>{keys.left=keys.right=false;if(state==='play')pause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=keys.right=false;if(state==='play')pause()}});
+/* ---- Android-App (Capacitor): Zurück-Taste ---- */
+(function(){const Cap=window.Capacitor,AppP=Cap&&Cap.Plugins&&Cap.Plugins.App;if(!AppP)return;
+ AppP.addListener('backButton',()=>{
+  if(state==='tut'){tutClose();return}
+  if(state==='play'){pause();return}
+  if(state==='pause'){if(!$('scrFb').hidden){fbBack();return}resume();return}
+  if(!$('scrMenu').hidden){AppP.exitApp();return}
+  if(!$('scrLegal').hidden){setScreen('scrSet');return}
+  if(state==='menu'||state==='over'){if(!$('scrFb').hidden){fbBack();return}if(state==='over'){toMenu();return}refreshMenu();setScreen('scrMenu')}
+ })})();
 /* Touch: neuester Lenk-Finger lenkt · nach oben wischen (beliebig oft pro Halten) = Doppelsprung
    · zweiter Finger auf derselben Seite = Doppelsprung, auf der anderen Seite = Richtungswechsel */
 const touches=new Map();
@@ -3313,7 +3342,7 @@ if(CFG.devMode===false)$('devBox').hidden=true; // Veröffentlichte Version: kei
 refreshMenu();setScreen('scrMenu');
 maybeShowNews();
 requestAnimationFrame(frame);
-if(CFG.devMode!==false)window.__LJ={get G(){return G},get state(){return state},get save(){return save},newRun,openLoot,chooseLoot,startBoss:()=>startBoss(),openBossReel:()=>openBossReel(),eligible:()=>eligible(),giveItem:id=>giveItem(IT[id]),evoReady:()=>evoReady().map(e=>e.id),iconIds:()=>Object.keys(ICON_DRAW),iconURL:id=>iconURL(id),doEvolve:id=>doEvolve(EVOS.find(e=>e.id===id)),trig:t=>triggerEvent({type:t,x:G.p.x,y:G.p.y,used:false}),openShop:()=>openShop(),activatePU:t=>activatePU(t),spawn:(t,x,y)=>makeEnemy(t,x,y,G.maxH)};
+if(CFG.devMode!==false)window.__LJ={fig:(...a)=>drawFigure(...a),hat:(...a)=>drawHat(...a),get G(){return G},get state(){return state},get save(){return save},newRun,openLoot,chooseLoot,startBoss:()=>startBoss(),openBossReel:()=>openBossReel(),eligible:()=>eligible(),giveItem:id=>giveItem(IT[id]),evoReady:()=>evoReady().map(e=>e.id),iconIds:()=>Object.keys(ICON_DRAW),iconURL:id=>iconURL(id),doEvolve:id=>doEvolve(EVOS.find(e=>e.id===id)),trig:t=>triggerEvent({type:t,x:G.p.x,y:G.p.y,used:false}),openShop:()=>openShop(),activatePU:t=>activatePU(t),spawn:(t,x,y)=>makeEnemy(t,x,y,G.maxH)};
 })();
 </script>
 </body></html>

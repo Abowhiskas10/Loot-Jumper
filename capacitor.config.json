@@ -1,0 +1,10 @@
+{
+  "appId": "com.abowhiskasstudios.lootjumper",
+  "appName": "Loot Jumper",
+  "webDir": "www",
+  "backgroundColor": "#0e1219",
+  "android": {
+    "backgroundColor": "#0e1219",
+    "allowMixedContent": false
+  }
+}

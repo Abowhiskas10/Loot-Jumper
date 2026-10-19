@@ -243,6 +243,16 @@ html.touch .card kbd{display:none}
 .wscard.eq{box-shadow:inset 0 0 0 2px var(--gold)}
 .wsbuy.eqb{background:var(--teal)}
 .wsbuy.ach{background:var(--panel2);color:var(--muted);font-size:.66em;line-height:1.2;min-width:6.5em;cursor:default}
+.logo2{width:min(88%,19em);height:auto;overflow:visible;filter:drop-shadow(0 .4em .8em rgba(0,0,0,.45))}
+.logo2 .chest{animation:chestbob 2.4s ease-in-out infinite;transform-box:fill-box}
+@keyframes chestbob{0%,100%{transform:translate(174px,60px)}50%{transform:translate(174px,55px) rotate(-3deg)}}
+.logo2 .glint{animation:glint 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes glint{0%,60%,100%{opacity:0;transform:scale(.4)}75%{opacity:1;transform:scale(1.1)}}
+.logo2 .arc{animation:arcmove 1.6s linear infinite}
+@keyframes arcmove{to{stroke-dashoffset:-22}}
+#menuHero{position:static;inset:auto;width:8.5em;height:8.5em;margin:-.9em 0 -.6em}
+#scrMenu{background:radial-gradient(ellipse at 50% 42%,rgba(8,10,15,.25),rgba(8,10,15,.72) 75%);backdrop-filter:none;-webkit-backdrop-filter:none}
+@media (prefers-reduced-motion:reduce){.logo2 .chest,.logo2 .glint,.logo2 .arc{animation:none}}
 .tipline{font-size:.76em;line-height:1.45;max-width:26em;text-align:left;background:rgba(10,13,19,.7);border-left:3px solid var(--teal);border-radius:.4em;padding:.45em .7em;color:var(--text)!important}
 .tipline b{color:var(--teal)}
 .fbcats{display:flex;gap:.45em;flex-wrap:wrap;justify-content:center}
@@ -332,7 +342,31 @@ html.touch .card kbd{display:none}
   <div class="ov" id="scrMenu">
     <button class="langbtn" id="bLangMenu" aria-label="Sprache wechseln / Change language">EN</button>
     <div class="tag">2D Vertical Roguelite</div>
-    <div class="logo">LOOT<span>JUMPER</span></div>
+    <svg class="logo2" viewBox="0 0 300 150" role="img" aria-label="Loot Jumper">
+      <defs>
+        <linearGradient id="lgG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#e09a2a"/></linearGradient>
+        <linearGradient id="lgW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfd8e6"/></linearGradient>
+      </defs>
+      <path class="arc" d="M24 70 Q150 -18 276 70" fill="none" stroke="#5fe0c8" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+      <g class="lw" font-family="Bungee, Impact, sans-serif" font-size="58" text-anchor="middle">
+        <text x="58" y="84" fill="#0a0d13" transform="translate(0,6)">L</text><text x="58" y="84" fill="url(#lgW)" stroke="#0a0d13" stroke-width="2.5" paint-order="stroke">L</text>
+        <text x="112" y="84" fill="#0a0d13" transform="translate(0,6)">O</text><text x="112" y="84" fill="url(#lgW)" stroke="#0a0d13" stroke-width="2.5" paint-order="stroke">O</text>
+        <text x="236" y="84" fill="#0a0d13" transform="translate(0,6)">T</text><text x="236" y="84" fill="url(#lgW)" stroke="#0a0d13" stroke-width="2.5" paint-order="stroke">T</text>
+      </g>
+      <g class="chest" transform="translate(174,60)">
+        <rect x="-24" y="-8" width="48" height="34" rx="5" fill="#8b5a2b" stroke="#0a0d13" stroke-width="3"/>
+        <path d="M-24 -6 Q0 -30 24 -6 Z" fill="#a8703a" stroke="#0a0d13" stroke-width="3"/>
+        <rect x="-24" y="-8" width="48" height="7" fill="#f2c14e" stroke="#0a0d13" stroke-width="2.5"/>
+        <rect x="-5" y="-4" width="10" height="13" rx="2" fill="#f2c14e" stroke="#0a0d13" stroke-width="2.5"/>
+        <rect x="-15" y="9" width="4" height="15" fill="#f2c14e"/><rect x="11" y="9" width="4" height="15" fill="#f2c14e"/>
+        <g class="glint"><path d="M0 -40 L3 -33 L10 -31 L3 -29 L0 -22 L-3 -29 L-10 -31 L-3 -33 Z" fill="#fff3c4"/></g>
+      </g>
+      <g font-family="Bungee, Impact, sans-serif" font-size="46" text-anchor="middle">
+        <text x="150" y="140" fill="#0a0d13" transform="translate(0,6)">JUMPER</text>
+        <text x="150" y="140" fill="url(#lgG)" stroke="#0a0d13" stroke-width="2.5" paint-order="stroke">JUMPER</text>
+      </g>
+    </svg>
+    <canvas id="menuHero" width="200" height="200" aria-hidden="true"></canvas>
     <div class="bank">
       <div><b id="mRec">0 m</b><span>Rekord</span></div>
       <div><b id="mCoins" style="color:var(--gold)">0</b><span>Münzen</span></div>
@@ -481,6 +515,7 @@ html.touch .card kbd{display:none}
         <button class="pre" id="devGod" style="--pc:#8fe9ff">Unverwundbar: aus</button>
         <button class="pre" id="devEvent" style="--pc:#ff7ad9">Ereignis jetzt</button>
         <button class="pre" id="devChars" style="--pc:var(--teal)">Alle Charaktere freischalten</button>
+        <button class="pre" id="devCos" style="--pc:#ff7ad9">Alle Kosmetik freischalten</button>
         <button class="pre" id="devEndless" style="--pc:var(--gold)">Endlos-Modus</button>
         <button class="pre" id="devMax" style="--pc:#ff9f43">Zufälliger Max-Build</button>
       </div>
@@ -524,6 +559,7 @@ html.touch .card kbd{display:none}
     <div id="wsCos" hidden>
     <p class="hint">Rein optisch – für Münzen oder Erfolge. Tippe ein gekauftes Teil an, um es an- oder abzulegen.</p>
     <div class="wslist" id="cosList"></div>
+    <button class="skip" id="bCosAll" hidden>Testmodus: alle Kosmetik freischalten</button>
     </div>
   </div>
 
@@ -1362,7 +1398,7 @@ function land(pl){
  const p=G.p;p.y=pl.y;
  let v=st.jumpV;
  if(pl.spring){v*=1.75;SFX.spring();ring(pl.x+pl.w/2,pl.y,40,C.gold,.3)}
- else if(pl.rune){v*=1.3;beep(520,.14,'triangle',.05,520);ring(pl.x+pl.w/2,pl.y,46,'#f2c14e',.35);burst(pl.x+pl.w/2,pl.y,'#ffe39a',10,160,3)}else SFX.jump();
+ else if(pl.rune){v*=1.3;beep(520,.14,'triangle',.05,520);ring(pl.x+pl.w/2,pl.y,46,'#f2c14e',.35);burst(pl.x+pl.w/2,pl.y,'#ffe39a',10,160,3)}else if(!landSnd())SFX.jump();
  if(pl.chain)pl.used=true;
  landFx(p.x,pl.y); // Himmelsfestung: nach Berührung unsichtbar, Zeit läuft weiter
  p.vy=-v;p.squash=1;p.lastLand=pl;p.airJump=true;G.jumpN++;
@@ -1746,7 +1782,7 @@ function checkCharUnlocks(){
  if((save.totalCoins||0)>=3000)unlockChar('gluck');
 }
 // --- Figuren: jeder Charakter mit sichtbarer Startwaffe (Füße bei 0,0; Blickrichtung f = ±1) ---
-function drawFigure(c,cid,f,sq,vy,t){
+function drawFigure(c,cid,f,sq,vy,t,noHat){ // noHat: eigener Hut der Figur ausblenden, wenn ein Kosmetik-Hut getragen wird
  const w=24*(1+sq*.22),h=30*(1-sq*.2),ink=C.ink;c.strokeStyle=ink;c.lineWidth=2.5;c.lineJoin='round';
  const R=(x,y,ww,hh,r,col)=>{c.beginPath();c.roundRect?c.roundRect(x,y,ww,hh,r):c.rect(x,y,ww,hh);c.fillStyle=col;c.fill();c.stroke()};
  const legs=col=>{c.fillStyle=col;const lg=vy<0?4:0;c.fillRect(-8,-7+lg*.5,6,7-lg*.5);c.fillRect(2,-7,6,7)};
@@ -1754,7 +1790,7 @@ function drawFigure(c,cid,f,sq,vy,t){
  switch(cid){
   case'funken':{legs('#2a2450');R(-w/2,-h*.8,w,h*.78,6,'#4a3f8f');c.fillStyle='#9fe8ff';c.fillRect(-w/2+3,-h*.38,w-6,2);
    c.fillStyle='#f0d9c4';c.beginPath();c.arc(0,head(2),8,0,7);c.fill();c.stroke();c.fillStyle=ink;c.fillRect(f*2-1,head(1),2,2);c.fillRect(f*2+3,head(1),2,2);
-   c.fillStyle='#2b2a6e';c.beginPath();c.moveTo(-12,head(-2));c.lineTo(12,head(-2));c.lineTo(-f*4,head(-22));c.closePath();c.fill();c.stroke();c.fillStyle=C.gold;c.beginPath();c.arc(-f*2,head(-10),2,0,7);c.fill();
+   if(!noHat){c.fillStyle='#2b2a6e';c.beginPath();c.moveTo(-12,head(-2));c.lineTo(12,head(-2));c.lineTo(-f*4,head(-22));c.closePath();c.fill();c.stroke();c.fillStyle=C.gold;c.beginPath();c.arc(-f*2,head(-10),2,0,7);c.fill()}else{c.fillStyle='#6b4a8f';c.beginPath();c.arc(0,head(2),8.6,Math.PI*1.05,Math.PI*1.95);c.fill()}
    c.strokeStyle=ink;c.lineWidth=4;c.beginPath();c.moveTo(f*14,-2);c.lineTo(f*14,-h-6);c.stroke();c.strokeStyle='#8a5f34';c.lineWidth=2;c.stroke();
    c.fillStyle='rgba(159,232,255,.35)';c.beginPath();c.arc(f*14,-h-9,8+Math.sin(t*8),0,7);c.fill();c.fillStyle='#9fe8ff';c.strokeStyle=ink;c.lineWidth=2;c.beginPath();c.arc(f*14,-h-9,4.5,0,7);c.fill();c.stroke();break}
   case'schmied':{legs('#3a2a1e');R(-w/2-1,-h*.78,w+2,h*.72,6,'#6b4a2f');R(-w/2+4,-h*.6,w-8,h*.5,3,'#9a6a3a');
@@ -2062,14 +2098,17 @@ function render(){
  ctx.setTransform(scale,0,0,scale,0,0);
  const cam=G?G.camY:menuCam;
  let z,zi=0;
- if(G){const a=ZONES[G.zoneFrom],b=ZONES[G.zone],t=G.zoneT;zi=t<.5?G.zoneFrom:G.zone;z=t>=1?b:{top:mix(a.top,b.top,t),bot:mix(a.bot,b.bot,t),wall:mix(a.wall,b.wall,t),plat:mix(a.plat,b.plat,t),mote:zi===G.zone?b.mote:a.mote}}else z=ZONES[0];
+ // Im Menü fährt das Panorama durch alle Zonen (alle 9 s weicher Wechsel)
+ let zF,zT,zt;if(G){zF=G.zoneFrom;zT=G.zone;zt=G.zoneT}else{const k=performance.now()/1000/9;zF=Math.floor(k)%ZONES.length;zT=(zF+1)%ZONES.length;zt=clamp((k%1-.78)/.22,0,1);if(zt<=0)zT=zF;if(zt>=1){zF=zT;zt=1}}
+ {const a=ZONES[zF],b=ZONES[zT],t=zt;zi=t<.5?zF:zT;z=t>=1||zF===zT?b:{top:mix(a.top,b.top,t),bot:mix(a.bot,b.bot,t),wall:mix(a.wall,b.wall,t),plat:mix(a.plat,b.plat,t),mote:zi===zT?b.mote:a.mote}}
+ const blend=zF!==zT&&zt<1;
  // textured backdrop (cross-fades between zones), then a tint gradient for depth
  ctx.fillStyle=z.bot;ctx.fillRect(0,0,W,H);
- if(G&&G.zoneT<1){drawBack(G.zoneFrom,cam,1);drawBack(G.zone,cam,G.zoneT)}else drawBack(G?G.zone:0,cam,1);
+ if(blend){drawBack(zF,cam,1);drawBack(zT,cam,zt)}else drawBack(zT,cam,1);
  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,z.top);g.addColorStop(1,z.bot);ctx.globalAlpha=.42;ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
- if(G&&G.zoneT<1){drawPar(G.zoneFrom,cam,1-G.zoneT);drawPar(G.zone,cam,G.zoneT)}else drawPar(G?G.zone:0,cam,1);
+ if(blend){drawPar(zF,cam,1-zt);drawPar(zT,cam,zt)}else drawPar(zT,cam,1);
  // parallax walls with stone texture
- const wz=G?(G.zoneT<.5?G.zoneFrom:G.zone):0;
+ const wz=zt<.5?zF:zT;
  drawWalls(cam,.25,z.wall,90,.6,wz,true);drawWalls(cam,.5,z.wall,70,1,wz,false);
  // ambient particles, styled per zone
  drawAmbient(zi,z,cam,G?G.t:performance.now()/1000);
@@ -2212,7 +2251,7 @@ function drawPlayer(p){
  ctx.save();ctx.translate(p.x,p.y);
  {const up=clamp(-p.vy/1300,0,1)*(1-p.squash),lean=clamp((p.vx||0)/430,-1,1)*.13;
   ctx.translate(0,-16);ctx.rotate(lean);if(p.cheerT>0){const k=1-p.cheerT/1.1;ctx.rotate(Math.min(1,k*1.6)*Math.PI*2*(p.face||1))}ctx.scale(1-up*.09,1+up*.13);ctx.translate(0,16)}
- drawFigure(ctx,CHR().id,p.face,p.squash,p.vy,G.t);
+ drawFigure(ctx,CHR().id,p.face,p.squash,p.vy,G.t,!!cosEq('hat'));
  drawHat(ctx,cosEq('hat'),CHR().id,p.face,p.squash,G.t);
  ctx.restore();ctx.globalAlpha=1;
  if(p.cheerT>0){for(let i=0;i<3;i++){const a=G.t*4+i*2.1,r=30;ctx.fillStyle=C.gold;ctx.globalAlpha=Math.min(1,p.cheerT);ctx.font='700 12px "Chakra Petch",sans-serif';ctx.textAlign='center';ctx.fillText('✦',p.x+Math.cos(a)*r,p.y-20+Math.sin(a)*r*.6);ctx.textAlign='left'}ctx.globalAlpha=1}
@@ -2787,9 +2826,10 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Partyhut':'Party Hat','Blumenkranz':'Flower Crown','Zylinder':'Top Hat','Wikingerhelm':'Viking Helmet','K-Cap':'K-Cap','Z-Mütze':'Z-Beanie','Heiligenschein':'Halo','Goldkrone':'Golden Crown','Besiege den Wächter':'Defeat the Warden',
  'Funkenspur':'Spark Trail','Blätterwirbel':'Leaf Swirl','Feuerschweif':'Fire Tail','Regenbogen':'Rainbow','Sternenstaub':'Stardust','Erreiche 5.000 m':'Reach 5,000 m',
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
+Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.6';
+const GAME_VER='0.9.7';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -2866,7 +2906,7 @@ const COS_CAT=[['hat','Hüte'],['trail','Sprung-Spuren'],['land','Lande-Effekte'
 function cosItem(id){for(const k in COSM){const f=COSM[k].find(x=>x.id===id);if(f)return f}return null}
 function cosOwned(it){return (save.cos.owned||[]).includes(it.id)||(it.achOk&&it.achOk())}
 function cosEq(cat){const id=save.cos&&save.cos.eq&&save.cos.eq[cat];const it=id&&cosItem(id);return it&&cosOwned(it)?id:null}
-const HAT_Y={funken:-46,schatten:-39,gluck:-37,pyro:-36,sammler:-34,waechter:-40,schmied:-33,alchemist:-34,akrobat:-32,abenteurer:-34};
+const HAT_Y={funken:-31,schatten:-39,gluck:-37,pyro:-36,sammler:-34,waechter:-40,schmied:-33,alchemist:-34,akrobat:-32,abenteurer:-34};
 function drawHat(c,id,cid,f,sq,t){if(!id)return;const y=(HAT_Y[cid]||-33)*(1-sq*.2),ink=C.ink;c.save();c.translate(0,y);c.strokeStyle=ink;c.lineWidth=2;c.lineJoin='round';
  const P=(pts,col)=>{c.fillStyle=col;c.beginPath();pts.forEach(([x,yy],i)=>i?c.lineTo(x,yy):c.moveTo(x,yy));c.closePath();c.fill();c.stroke()};
  switch(id){
@@ -2898,6 +2938,13 @@ function cosTick(dt){const p=G.p,tid=cosEq('trail');
  else if(tid==='t_feuer')cfx({k:'dot',x,y,vx:rand(-20,20),vy:rand(-40,10),g:-80,life:.4,max:.4,col:['#ffd36a','#ff9a4a','#ff6b5e'][Math.floor(Math.random()*3)],size:rand(3,6)});
  else if(tid==='t_regen')cfx({k:'dot',x:p.x,y,vx:0,vy:0,g:0,life:.5,max:.5,col:`hsl(${(G.t*360)%360},90%,65%)`,size:6});
  else if(tid==='t_sterne')cfx({k:'star',x,y,vx:rand(-30,30),vy:rand(0,40),g:40,life:.7,max:.7,col:Math.random()<.5?'#fff3c4':'#f2c14e',rot:rand(0,6),vr:rand(-4,4),size:4})}
+// Eigener Lande-Sound je Lande-Effekt (ersetzt den normalen Sprung-Ton)
+function landSnd(){const id=cosEq('land');if(!id)return false;
+ if(id==='l_herz'){beep(520,.07,'sine',.03,160);beep(1320,.12,'triangle',.018,0,.04)}
+ else if(id==='l_muenz'){beep(1180,.06,'square',.014,0);beep(1570,.09,'square',.014,0,.06)}
+ else if(id==='l_blitz'){noise(.08,.03,2600);beep(880,.06,'sawtooth',.012,-500)}
+ else if(id==='l_konfetti'){noise(.05,.025,1200);beep(420,.14,'triangle',.022,520,.02)}
+ return true}
 function landFx(x,y){const id=cosEq('land');if(!id)return;
  if(id==='l_herz')for(let i=0;i<4;i++)cfx({k:'heart',x:x+rand(-10,10),y:y-4,vx:rand(-50,50),vy:rand(-120,-60),g:120,life:.7,max:.7,col:'#ff7ad9',size:5});
  else if(id==='l_muenz')for(let i=0;i<5;i++)cfx({k:'coin',x:x+rand(-8,8),y:y-4,vx:rand(-90,90),vy:rand(-200,-110),g:700,life:.6,max:.6,col:C.gold,size:4});
@@ -2927,6 +2974,9 @@ function buildCos(){$('wsCoins').textContent=save.coins;save.cos=save.cos||{owne
   if(!cosOwned(it)){if(save.coins<it.price)return;save.coins-=it.price;save.cos.owned.push(it.id);save.cos.eq[cat]=it.id;SFX.buy();toast(tr(it.name)+tr(' gekauft und angelegt'),'gold')}
   else save.cos.eq[cat]=save.cos.eq[cat]===it.id?null:it.id;
   persist();refreshMenu();buildCos()})}
+function unlockAllCos(){save.cos=save.cos||{owned:[],eq:{}};for(const k in COSM)for(const it of COSM[k])if(!save.cos.owned.includes(it.id))save.cos.owned.push(it.id);persist();toast(tr('Alle Kosmetik freigeschaltet (Testmodus)'),'gold')}
+$('devCos').onclick=()=>unlockAllCos();
+$('bCosAll').hidden=CFG.devMode===false;$('bCosAll').onclick=()=>{unlockAllCos();buildCos()};
 let wsTab='pu';
 document.querySelectorAll('[data-wtab]').forEach(b=>b.onclick=()=>{wsTab=b.dataset.wtab;document.querySelectorAll('[data-wtab]').forEach(x=>x.classList.toggle('on',x===b));$('wsPu').hidden=wsTab!=='pu';$('wsCos').hidden=wsTab!=='cos';if(wsTab==='cos')buildCos();else buildWs()});
 
@@ -2972,6 +3022,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.7',
+  neu:[['Neues Titelbild mit Logo und Zonen-Panorama','New title screen with logo and zone panorama']],
+  fix:[]},
  {v:'0.9.6',
   neu:[['Hintergründe mit Tiefe in allen Zonen','Backgrounds with depth in every zone'],
        ['Lebendigere Figuren: Spieler, Gegner und Bosse bewegen sich mehr','Livelier characters: player, enemies and bosses move more'],
@@ -3068,6 +3121,21 @@ async function sendFb(){const msg=$('fbText').value.trim();
 }
 $('bFb').onclick=()=>openFb('scrOver');$('pFb').onclick=()=>openFb('scrPause');
 $('bFbSend').onclick=sendFb;$('bFbBack').onclick=fbBack;
+
+/* ================= TITELBILD: hüpfende Figur im Menü ================= */
+const MH={t:0,y:0,vy:-260,sq:0,parts:[]};
+function drawMenuHero(dt){const cv=$('menuHero');if(!cv||$('scrMenu').hidden)return;const g=cv.getContext('2d'),S=cv.width/100;
+ MH.t+=dt;MH.vy+=1100*dt;MH.y+=MH.vy*dt;MH.sq=Math.max(0,MH.sq-dt*6);
+ if(MH.y>=0){MH.y=0;MH.vy=-260;MH.sq=1;const tid=cosEq('land');for(let i=0;i<6;i++)MH.parts.push({x:rand(-14,14),y:0,vx:rand(-40,40),vy:rand(-90,-30),life:.5,col:tid==='l_herz'?'#ff7ad9':tid==='l_konfetti'?['#ff6b5e','#ffd166','#5fe0c8'][i%3]:tid==='l_muenz'?C.gold:'rgba(220,230,255,.7)'})}
+ const tid=cosEq('trail');if(tid&&Math.random()<.6){const col={t_funken:'#ffd166',t_blatt:'#7cc47a',t_feuer:'#ff9a4a',t_regen:`hsl(${(MH.t*360)%360},90%,65%)`,t_sterne:'#fff3c4'}[tid];MH.parts.push({x:rand(-4,4),y:MH.y-10,vx:rand(-10,10),vy:rand(10,40),life:.45,col})}
+ for(const q of MH.parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=200*dt;q.life-=dt}MH.parts=MH.parts.filter(q=>q.life>0);
+ g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(S,0,0,S,50*S,82*S);
+ // Schatten + Plattform
+ g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(0,9,18-Math.min(10,-MH.y*.08),3,0,0,7);g.fill();
+ g.fillStyle='#4f8f88';g.strokeStyle=C.ink;g.lineWidth=2.5;g.beginPath();g.roundRect?g.roundRect(-24,2,48,9,4):g.rect(-24,2,48,9);g.fill();g.stroke();g.fillStyle='#7fd1c4';g.fillRect(-21,3.5,42,2);
+ for(const q of MH.parts){g.globalAlpha=Math.min(1,q.life*2.5);g.fillStyle=q.col;g.beginPath();g.arc(q.x,q.y,1.8,0,7);g.fill()}g.globalAlpha=1;
+ g.save();g.translate(0,MH.y+2);const up=clamp(-MH.vy/450,0,1)*(1-MH.sq);g.translate(0,-16);g.scale(1-up*.08,1+up*.12);g.translate(0,16);
+ const cid=save.chars.includes(save.char)?save.char:'abenteurer';drawFigure(g,cid,1,MH.sq,MH.vy,MH.t,!!cosEq('hat'));drawHat(g,cosEq('hat'),cid,1,MH.sq,MH.t);g.restore()}
 
 /* ================= MENUS ================= */
 const screens=['scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
@@ -3230,7 +3298,7 @@ let last=performance.now();
 function frame(now){
  const dt=Math.min(.033,Math.max(0,(now-last)/1000));last=now;
  if(state==='play'&&G){let d=dt;if(G.hitstop>0){G.hitstop-=dt;d=0}else if(G.slowT>0){G.slowT-=dt;d=dt*.28}if(d>0)update(d)}
- if(!G)menuCam-=dt*40;
+ if(!G){menuCam-=dt*55;drawMenuHero(dt)}
  try{render()}catch(err){console.error(err)}
  updateHUD();
  requestAnimationFrame(frame);

@@ -208,6 +208,18 @@ html.touch .card kbd{display:none}
 .wscard small .sp{color:var(--gold)}
 .wsbuy{flex:none;min-width:4.6em;font:inherit;font-weight:700;font-size:.8em;padding:.45em .5em;border-radius:.45em;border:2px solid var(--ink);background:var(--gold);color:#1a1206;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.25em}
 .wsbuy:disabled{background:var(--panel2);color:var(--muted);cursor:default}
+.rt.unk .tile{filter:grayscale(1) brightness(.55)}
+.rt.unk span{color:var(--muted)}
+.rt.unk::after{content:'?';position:absolute;top:.25em;right:.4em;font-family:var(--display);font-weight:700;color:var(--muted);font-size:.8em}
+.rt{position:relative}
+.rt.fresh::before{content:'NEU';position:absolute;top:-.2em;left:50%;transform:translateX(-50%);background:var(--gold);color:#1a1206;font-size:.55em;font-weight:800;padding:.1em .45em;border-radius:1em;letter-spacing:.08em;animation:winp .6s ease-out}
+.dupl{color:var(--muted)}
+.cempty{font-size:.8em;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.sellist{width:min(100%,24em);display:flex;flex-wrap:wrap;gap:.4em;justify-content:center}
+.sell{display:flex;align-items:center;gap:.4em;font:inherit;font-size:.78em;font-weight:600;background:var(--panel);color:var(--text);border:2px solid var(--ink);box-shadow:inset 0 0 0 1px var(--rc);border-radius:.5em;padding:.3em .55em .3em .3em;cursor:pointer}
+.sell .ic{width:1.8em;height:1.8em}
+.sell.arm{background:var(--coral);color:#1a0d0b}
+.selltitle{font-size:.78em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
 .tipline{font-size:.76em;line-height:1.45;max-width:26em;text-align:left;background:rgba(10,13,19,.7);border-left:3px solid var(--teal);border-radius:.4em;padding:.45em .7em;color:var(--text)!important}
 .tipline b{color:var(--teal)}
 .fbcats{display:flex;gap:.45em;flex-wrap:wrap;justify-content:center}
@@ -406,6 +418,8 @@ html.touch .card kbd{display:none}
     <p class="hint" id="shopSlots"></p>
     <div class="cards" id="shopItems"></div>
     <div class="services" id="shopServ"></div>
+    <p class="selltitle" id="sellTitle">Verkaufen</p>
+    <div class="sellist" id="shopSell"></div>
     <p class="hint">Bezahlt wird mit den Münzen dieses Runs. Was du hier ausgibst, landet am Ende nicht auf deinem Konto.</p>
     <div class="btns"><button class="btn main" id="bShopGo">Weiter klettern</button></div>
   </div>
@@ -1118,10 +1132,11 @@ function genRow(){
  const pl=addPlat(x,y,w,type);
  if(dark){pl.chain=++G.chainN;pl.vis=0;G.chainX=x+w/2;if(G.chainCur==null)G.chainCur=pl.chain-1}
  if(type==='burn'&&Math.random()<.45){const left=x+w/2>W/2;addPlat(left?rand(6,W/2-w-12):rand(W/2+12,W-w-6),y+rand(-30,14),w,'burn')}
- if(type==='hazard'||type==='timed'){
+ // Zerbrechliche Plattform: immer eine feste Partner-Plattform in derselben Reihe, damit man nach einem Fehlsprung nicht festsitzt
+ if(type==='hazard'||type==='timed'||type==='fragile'){
   const left=x+w/2>W/2;
   const x2=left?rand(6,W/2-w-12):rand(W/2+12,W-w-6);
-  addPlat(x2,y+rand(-28,12),w,h>150&&Math.random()<.4?'moving':'normal');
+  addPlat(x2,y+rand(-28,12),w,type!=='fragile'&&h>150&&Math.random()<.4?'moving':'normal');
  }
  if(!dark&&Math.random()<.3){const n=randi(1,3);for(let i=0;i<n;i++)addCoin(x+w/2,y-34-i*26,false)}
  if(!dark&&h>70&&Math.random()<.07){ // risky coin arc
@@ -2250,12 +2265,12 @@ function skipLoot(){if(state!=='loot')return;G.coinF+=15;G.coinsRun=Math.floor(G
 
 /* ================= REEL (Kisten-Walze) ================= */
 let reel=null;
-function reelTile(it){return`<div class="rt" style="--rc:${RAR[it.r].c}">${tileHTML(it.id)}<span>${it.name}</span></div>`}
+function reelTile(it,mark){const nw=mark&&!save.unlocked.includes(it.id);return`<div class="rt${nw?' unk':''}" style="--rc:${RAR[it.r].c}">${tileHTML(it.id)}<span>${it.name}</span></div>`}
 function playReel(o){
  // o: {tag,title,winner,filler(),done(),btn,meta}
  const N=48,WIN=41,strip=$('strip'),box=$('reel');
  const list=[];for(let i=0;i<N;i++)list.push(i===WIN?o.winner:o.filler());
- strip.innerHTML=list.map(reelTile).join('');strip.style.transform='translateX(0px)';
+ strip.innerHTML=list.map((it,i)=>reelTile(it,o.markNew&&!(i===WIN&&o.isNew===false))).join('');if(o.markNew&&o.isNew)strip.children[WIN].classList.add('unk');strip.style.transform='translateX(0px)';
  $('reelTag').textContent=o.tag;$('reelTitle').textContent=o.title;
  $('reelResult').innerHTML='';$('reelBtn').hidden=true;$('reelHint').hidden=false;
  setScreen('scrReel');
@@ -2271,7 +2286,7 @@ function playReel(o){
    const idx=Math.floor((x+bw/2)/step);if(idx!==lastIdx){lastIdx=idx;if(k<1)SFX.tick()}
    if(k<1){requestAnimationFrame(f);return}
    reel=null;$('reelHint').hidden=true;
-   strip.children[WIN].classList.add('win');
+   strip.children[WIN].classList.add('win');if(o.markNew&&o.isNew){strip.children[WIN].classList.remove('unk');strip.children[WIN].classList.add('fresh')}
    SFX.reelEnd(o.winner.r);
    $('reelResult').innerHTML=`<div class="card" style="--rc:${RAR[o.winner.r].c};cursor:default">${o.cardHTML}</div>`;
    const btn=$('reelBtn');btn.textContent=o.btn;btn.hidden=false;btn.onclick=()=>{btn.onclick=null;o.done()};
@@ -2385,7 +2400,7 @@ function shopServices(){const p=G.p,m=priceMul()*(CHR().id==='gluck'?.75:1);retu
  {id:'reroll',name:tr('Neu würfeln'),d:tr('Neue Item-Angebote'),price:10+10*G.shopRolls,ok:true},
  ...evoReady().map(e=>({id:'evo:'+e.id,name:tr('Entwickeln'),d:e.name+tr(' (gratis)'),price:0,ok:true}))]}
 function spend(n){if(G.coinsRun<n)return false;G.coinF-=n;G.coinsRun=Math.floor(G.coinF);G.coinsSpent+=n;SFX.coin();return true}
-function openShop(){state='loot';keys.left=keys.right=false;G.shopRolls=0;G.elixirBought=false;rollShop();renderShop();setScreen('scrShop');setTimeout(()=>$('bShopGo').focus({preventScroll:true}),30)}
+function openShop(){state='loot';keys.left=keys.right=false;G.shopRolls=0;G.elixirBought=false;sellArm=null;rollShop();renderShop();setScreen('scrShop');setTimeout(()=>$('bShopGo').focus({preventScroll:true}),30)}
 function renderShop(){
  const p=G.p;$('sCoins').textContent=G.coinsRun;$('shopSlots').textContent=slotLine()+tr(' · LP ')+Math.ceil(p.hp)+'/'+p.maxHp;
  const el=eligible();
@@ -2395,6 +2410,7 @@ function renderShop(){
  $('shopServ').innerHTML=shopServices().map(sv=>`<button class="svc" data-svc="${sv.id}" ${sv.ok&&G.coinsRun>=sv.price?'':'disabled'}><b>${sv.name}</b><small>${sv.d}</small><span class="pr"><span class="cic"></span>${sv.price}</span></button>`).join('');
  $('shopItems').querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const o=shopOffers[+b.dataset.buy];if(!o||o.sold)return;if(o.ov){if(!spend(ovPrice()))return;o.sold=true;giveOv(o.ov);SFX.buy();renderShop();return}if(!eligible().includes(o.it))return;if(!spend(itemPrice(o.it)))return;o.sold=true;giveItem(o.it);SFX.buy();renderShop()});
  $('shopServ').querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>buyService(b.dataset.svc));
+ renderSell();
 }
 function buyService(id){const sv=shopServices().find(x=>x.id===id),p=G.p;if(!sv||!sv.ok||(sv.price>0&&!spend(sv.price)))return;
  if(id.startsWith('evo:')){const e=EVOS.find(x=>'evo:'+x.id===id);doEvolve(e);renderShop();return}
@@ -2617,6 +2633,7 @@ Object.assign(EN_TXT,{'Werkstatt':'Workshop','Verbessere deine Power-ups dauerha
  '7,5 s':'7.5 s','15 % höher':'15% higher','30 % höher':'30% higher','+20 % Power-ups':'+20% power-ups','+40 % Power-ups':'+40% power-ups','+60 % Power-ups':'+60% power-ups',
  'zieht auch Power-ups an':'also pulls in power-ups','Gegner, die du berührst, nehmen Schaden':'enemies you touch take damage','dreifache statt doppelte Münzen':'triple instead of double coins',
  'Schüsse durchschlagen einen Gegner mehr':'shots pierce one more enemy','Schockwelle beim Abheben':'shockwave on take-off'});
+Object.assign(EN_TXT,{'Schon vorhanden':'Already owned','Münzen zurück':'coins back','Leer':'Empty','Verkaufen':'Sell','Sicher? Tippen zum Verkaufen':'Sure? Tap to sell',' verkauft: +':' sold: +'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
 const GAME_VER='0.9.4';
@@ -2697,6 +2714,20 @@ let wsResetArm=false;
 $('bWs').onclick=()=>{wsResetArm=false;buildWs();setScreen('scrWs')};
 $('bWsReset').onclick=()=>{if(!wsResetArm){wsResetArm=true;buildWs();return}wsResetArm=false;save.coins+=wsSpent();save.ws={};persist();SFX.coin();buildWs();refreshMenu();toast(tr('Werkstatt zurückgesetzt, Münzen erstattet'),'gold')};
 
+/* ================= VERKAUFEN BEIM HÄNDLER ================= */
+// Ein Item verkaufen: Hälfte des Werts pro Stufe zurück, Slot wird frei. Entwicklungen nicht verkaufbar.
+let sellArm=null;
+function sellValue(id){return Math.max(5,Math.round(itemPrice(IT[id])*.5*(G.items[id]||1)))}
+function sellable(){return Object.keys(G.items).filter(id=>!G.merged.has(id)&&!IT[id].evo)}
+function renderSell(){const l=sellable();$('sellTitle').hidden=!l.length;
+ $('shopSell').innerHTML=l.map(id=>{const it=IT[id],n=G.items[id];return`<button class="sell${sellArm===id?' arm':''}" data-sell="${id}" style="--rc:${RAR[it.r].c}">${iconImg(id)}<span>${sellArm===id?tr('Sicher? Tippen zum Verkaufen'):it.name+(n>1?' '+n:'')}</span><b><span class="cic"></span>+${sellValue(id)}</b></button>`}).join('');
+ $('shopSell').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{const id=b.dataset.sell;if(sellArm!==id){sellArm=id;renderSell();return}sellArm=null;sellItem(id)})}
+function sellItem(id){if(!G.items[id])return;const v=sellValue(id),p=G.p;
+ delete G.items[id];if(id==='phoenix')p.revive=false;
+ st=computeStats(G.items);p.maxHp=calcMaxHp();p.hp=Math.min(p.hp,p.maxHp);
+ G.coinF+=v;G.coinsRun=Math.floor(G.coinF);SFX.coin();hudCache={};
+ toast(IT[id].name+tr(' verkauft: +')+v+' '+tr('Münzen'),'gold');renderShop()}
+
 /* ================= ÜBERLADUNGEN ================= */
 // Unbegrenzt stapelbare Boni: erscheinen, wenn keine passenden Items mehr frei sind (voller Build)
 const OV_COL='#ff9f43';
@@ -2762,22 +2793,27 @@ function refreshMenu(){syncSettings();syncTipBtn();$('mRec').textContent=save.re
 function buildChests(){
  $('cCoins').textContent=save.coins;
  const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
- $('chestList').innerHTML=CHESTS.map(c=>`<div class="chest"><div class="cbox" style="--cc:${c.col}"></div><div><div class="cn">${c.name}</div><div class="odds">${c.odds.map((o,i)=>o?`<span style="--rc:${RAR[i].c}">${RAR[i].n} ${o}%</span>`:'').join('')}</div></div><div class="price"><button class="btn${save.coins>=c.price&&locked.length?' main':''}" data-chest="${c.id}" ${save.coins<c.price||!locked.length?'disabled':''}><span class="cic"></span>${c.price}</button></div></div>`).join('');
+ const ok=c=>save.coins>=c.price&&chestHasNew(c);
+ $('chestList').innerHTML=CHESTS.map(c=>`<div class="chest"><div class="cbox" style="--cc:${c.col}"></div><div><div class="cn">${c.name}</div><div class="odds">${c.odds.map((o,i)=>o?`<span style="--rc:${RAR[i].c}">${RAR[i].n} ${o}%</span>`:'').join('')}</div></div><div class="price">${chestHasNew(c)?`<button class="btn${ok(c)?' main':''}" data-chest="${c.id}" ${ok(c)?'':'disabled'}><span class="cic"></span>${c.price}</button>`:`<span class="cempty">${tr('Leer')}</span>`}</div></div>`).join('');
  $('chestList').querySelectorAll('[data-chest]').forEach(b=>b.onclick=()=>openChest(b.dataset.chest));
  if(!locked.length)$('reveal').innerHTML=tr('<p class="hint">Alle Items sind freigeschaltet.</p>');
 }
+// Menü-Truhen: würfeln nur die angezeigten Seltenheiten. Doppelte Items geben die Hälfte des Preises zurück.
+function chestRars(c){return c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0).map(x=>x[0])}
+function chestHasNew(c){return ITEMS.some(i=>chestRars(c).includes(i.r)&&!save.unlocked.includes(i.id))}
 function openChest(id){
- const c=CHESTS.find(x=>x.id===id);const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
- if(!c||save.coins<c.price||!locked.length)return;
+ const c=CHESTS.find(x=>x.id===id);
+ if(!c||save.coins<c.price||!chestHasNew(c))return;
  audioOn();
  const r=wpick(c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0));
- let it=null;for(const d of[0,1,-1,2,-2,3,-3]){const cand=locked.filter(i=>i.r===r+d);if(cand.length){it=pick(cand);break}}
- if(!it)return;
- // result is decided and saved before the animation, so closing the page mid-spin loses nothing
- save.coins-=c.price;save.unlocked.push(it.id);persist();refreshMenu();
- const card=`${tileHTML(it.id)}<div><div class="nm">${it.name}</div><div class="meta">${RAR[it.r].n} · ${it.cat} · ${SLOT_N[it.slot]} · <span class="new">${tr('Freigeschaltet')}</span></div><div class="ds">${it.d}</div></div>`;
- playReel({tag:c.name,title:tr('Truhe öffnet sich'),winner:it,
-  filler:()=>{const rr=wpick(c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0));const cand=ITEMS.filter(i=>i.r===rr);return cand.length?pick(cand):pick(ITEMS)},
+ const it=pick(ITEMS.filter(i=>i.r===r));
+ const isNew=!save.unlocked.includes(it.id),refund=isNew?0:Math.floor(c.price/2);
+ // Ergebnis wird vor der Animation gespeichert, damit Schließen mitten im Drehen nichts verliert
+ save.coins-=c.price-refund;if(isNew)save.unlocked.push(it.id);persist();refreshMenu();
+ const tag=isNew?`<span class="new">${tr('Neu freigeschaltet')}</span>`:`<span class="dupl">${tr('Schon vorhanden')} · +${refund} ${tr('Münzen zurück')}</span>`;
+ const card=`${tileHTML(it.id)}<div><div class="nm">${it.name}</div><div class="meta">${RAR[it.r].n} · ${it.cat} · ${SLOT_N[it.slot]} · ${tag}</div><div class="ds">${it.d}</div></div>`;
+ playReel({tag:c.name,title:tr('Truhe öffnet sich'),winner:it,markNew:true,isNew,
+  filler:()=>pick(ITEMS.filter(i=>i.r===wpick(c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0)))),
   cardHTML:card,btn:tr('Zurück zu den Truhen'),
   done:()=>{buildChests();$('reveal').innerHTML=`<div class="card" style="--rc:${RAR[it.r].c};cursor:default">${card}</div>`;setScreen('scrChests')}});
 }

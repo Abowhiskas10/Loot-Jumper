@@ -1,0 +1,100 @@
+# LOOT JUMPER – baut bei jedem Hochladen automatisch:
+#  1) die Website (Spiel + Datenschutz + Impressum) und veröffentlicht sie auf GitHub Pages
+#  2) die Android-App (.aab für den Play Store, .apk zum Testen auf dem Handy)
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Website bauen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: node tools/build.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Website veröffentlichen
+    needs: web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  android:
+    name: Android-App bauen
+    needs: web
+    runs-on: ubuntu-latest
+    env:
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm install --no-audit --no-fund
+      - run: node tools/build.mjs
+      - name: Android-Projekt erzeugen
+        run: npx cap add android
+      - name: App-Symbole erzeugen
+        run: npx capacitor-assets generate --android --iconBackgroundColor "#1b2442" --iconBackgroundColorDark "#1b2442" --splashBackgroundColor "#0e1219" --splashBackgroundColorDark "#0e1219"
+        continue-on-error: true
+      - name: Hochformat und Versionsnummer
+        run: node tools/android-patch.mjs
+      - run: npx cap sync android
+      - name: Signatur-Schlüssel bereitstellen
+        if: env.KS_B64 != ''
+        run: echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+      - name: App bauen
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          if [ -n "$KS_B64" ]; then
+            ./gradlew --no-daemon bundleRelease assembleRelease \
+              -Pandroid.injected.signing.store.file="$RUNNER_TEMP/upload.jks" \
+              -Pandroid.injected.signing.store.password="$KS_PASS" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASS"
+          else
+            echo "Kein Signatur-Schlüssel hinterlegt – baue nur eine Test-APK (nicht für den Play Store)."
+            ./gradlew --no-daemon assembleDebug
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loot-jumper-android
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

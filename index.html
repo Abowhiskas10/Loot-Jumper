@@ -1738,7 +1738,7 @@ function update(dt){
 
  // chests
  for(const c of G.chests){c.t+=dt;if(c.pl&&c.pl.alive&&!c.pl.breaking){c.x=c.pl.x+c.ox;c.y=c.pl.y}
-  const onPl=c.pl&&c.pl.alive&&!c.pl.breaking?(p.lastLand===c.pl&&Math.abs(p.x-c.x)<c.pl.w/2+16&&p.y-c.y<40):dist2(c.x,c.y-12,p.x,p.y-16)<30*30; // Truhen auf Plattformen erst nach Landung öffnen
+  const onPl=c.pl&&c.pl.alive&&!c.pl.breaking?((p.lastLand===c.pl&&Math.abs(p.x-c.x)<c.pl.w/2+16&&p.y-c.y<40)||(Math.abs(p.x-c.x)<26&&p.y<=c.y+1&&p.y>=c.y-46)):dist2(c.x,c.y-12,p.x,p.y-16)<30*30; // Truhen auf Plattformen: öffnen, sobald die Füße die Plattformhöhe erreicht haben (Landen nicht nötig, Durchspringen geht)
   if(onPl){c.got=true;burst(c.x,c.y-12,C.violet,20,220,5);openLoot(c.boss?'boss':null);break}}
  G.chests=G.chests.filter(c=>!c.got&&c.y<G.camY+H+80);
  for(const ev of G.events){eventPos(ev);if(!ev.used&&(!ev.pl||!ev.pl.chain||ev.pl.vis>.5)&&dist2(ev.x,ev.y-22,p.x,p.y-16)<36*36){triggerEvent(ev);break}}
@@ -3056,7 +3056,7 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 const CHANGELOG=[
  {v:'0.9.9',
   neu:[['Spielzeit auf dem Game-Over-Bildschirm','Play time on the game over screen'],['Blutaltar gibt immer ein neues Item – bei vollen Slots mit Tausch-Angebot','Blood altar always gives a new item – with a swap offer when slots are full'],['Zonen 4–6 und ihre Bosse etwas schwerer','Zones 4–6 and their bosses slightly harder']],
-  fix:[['Truhen öffnen sich erst, wenn man wirklich auf ihrer Plattform landet','Chests only open once you actually land on their platform']]},
+  fix:[['Truhen öffnen sich erst, wenn man die Höhe ihrer Plattform erreicht','Chests only open once you reach the height of their platform']]},
  {v:'0.9.8',
   neu:[],
   fix:[['Bestenliste gegen Manipulation abgesichert','Leaderboard secured against tampering']]},

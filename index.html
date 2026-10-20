@@ -433,7 +433,7 @@ html.touch .card kbd{display:none}
     <div class="coins" style="justify-content:center"><span class="cic"></span><span id="cCoins">0</span></div>
     <div class="chests" id="chestList"></div>
     <div class="reveal" id="reveal"><p class="hint">Truhen schalten Items dauerhaft frei. Sie landen danach im Loot-Pool deiner Runs.</p></div>
-    <p class="hint">Nur Ingame-Münzen, keine Echtgeldkäufe. Keine Duplikate: Ist eine Seltenheit komplett freigeschaltet, wird die nächstliegende gezogen.</p>
+    <p class="hint">Nur Ingame-Münzen, keine Echtgeldkäufe. Keine Duplikate: Jede Truhe enthält nur Items, die du noch nicht hast.</p>
   </div>
 
   <!-- Collection -->
@@ -641,7 +641,7 @@ const EN_TXT={
  'Fähigkeiten':'Abilities','Werte':'Stats','Wie heißt du?':"What's your name?",'Dein Name erscheint in der Bestenliste neben deinem höchsten Score.':'Your name appears on the leaderboard next to your best score.',
  "Los geht's":"Let's go",'Aktualisieren':'Refresh','Truhen':'Chests',
  'Truhen schalten Items dauerhaft frei. Sie landen danach im Loot-Pool deiner Runs.':'Chests unlock items permanently. They are then added to the loot pool of your runs.',
- 'Nur Ingame-Münzen, keine Echtgeldkäufe. Keine Duplikate: Ist eine Seltenheit komplett freigeschaltet, wird die nächstliegende gezogen.':'In-game coins only, no real-money purchases. No duplicates: if a rarity is fully unlocked, the closest one is drawn instead.',
+ 'Nur Ingame-Münzen, keine Echtgeldkäufe. Keine Duplikate: Jede Truhe enthält nur Items, die du noch nicht hast.':'In-game coins only, no real-money purchases. No duplicates: each chest only contains items you don\'t have yet.',
  'Ton: an':'Sound: on','Ton: aus':'Sound: off','Musik':'Music','Effekte':'Effects','Bildschirmwackeln: an':'Screen shake: on','Bildschirmwackeln: aus':'Screen shake: off',
  'Name ändern':'Change name','Spielstand zurücksetzen':'Reset save data','Zurück':'Back','Beute!':'Loot!','Wähle eine Verbesserung ·':'Choose an upgrade ·',
  'Überspringen und 15 Münzen nehmen':'Skip and take 15 coins','Nach dem Bosskampf':'After the boss fight','Händler':'Merchant',
@@ -740,7 +740,7 @@ const EN_DATA={
   thermoschock:['Thermal Shock','Frozen, burning enemies take +60% instead of +25% damage'],splitterfrost:['Shatter Frost','Crits against frozen enemies deal +50% damage'],
   drohnenschwarm:['Drone Swarm','Drones fire two shots'],blutrausch:['Blood Frenzy','Below 50% HP, Vampire Fang heals twice as much'],meteorsturm:['Meteor Storm','Meteor impact on every 2nd jump'],
   klingenwirbel:['Blade Whirl','Blades spin faster and hit more often'],scharfschuetze:['Sharpshooter','Projectiles pierce +1 enemy'],bollwerk:['Bulwark','Another −10% damage taken'],kriegsrausch:['War Frenzy','Adrenaline stacks last twice as long']},
- chests:{holz:'Wooden Chest',magie:'Magic Chest',legend:'Legendary Chest'},
+ chests:{holz:'Common Chest',selten:'Rare Chest',magie:'Epic Chest',legend:'Legendary Chest'},
  enemies:{slime:'Slimeling',bat:'Cave Flutter',shooter:'Spewer',mimic:'Mimic',tank:'Rock Shell',shaman:'Rune Caller',spitter:'Poison Spitter',charger:'Storm Ram'},
  bosses:{golem:'Stone Golem',ooze:'Toxic Ooze',hunter:'Sky Hunter',thunder:'Thunder Colossus',beast:'Inferno Beast',warden:'The Warden'},
  pu:{magnet:'Super Magnet',schild:'Invincible',doppelt:'Double Coins',raserei:'Frenzy',rakete:'Rocket Jump'},
@@ -929,9 +929,10 @@ const SYN=[
  {id:'kriegsrausch',name:'Kriegsrausch',req:['adrenalin','zorn'],d:'Adrenalin-Stapel halten doppelt so lange'},
 ];
 const CHESTS=[
- {id:'holz',name:'Holzkiste',price:50,odds:[70,25,5,0],col:'#8b6a4a'},
- {id:'magie',name:'Magische Truhe',price:180,odds:[20,50,25,5],col:'#7b5fd0'},
- {id:'legend',name:'Legendäre Truhe',price:500,odds:[0,20,50,30],col:'#d9a63a'},
+ {id:'holz',name:'Gewöhnliche Truhe',r:0,price:50,col:'#8b6a4a'},
+ {id:'selten',name:'Seltene Truhe',r:1,price:100,col:'#3f9c8f'},
+ {id:'magie',name:'Epische Truhe',r:2,price:220,col:'#7b5fd0'},
+ {id:'legend',name:'Legendäre Truhe',r:3,price:500,col:'#d9a63a'},
 ];
 const EN={
  slime:{name:'Schleimling',hp:22,r:14,dmg:12,coin:1,col:'#7cc47a'},
@@ -2858,10 +2859,10 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
-Object.assign(EN_TXT,{'Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
+Object.assign(EN_TXT,{'Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.9';
+const GAME_VER='0.9.10';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -3054,6 +3055,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.10',
+  neu:[['Eine Truhe pro Seltenheit – keine Duplikate mehr, Anzeige wie viele Items noch fehlen','One chest per rarity – no more duplicates, shows how many items are left']],
+  fix:[]},
  {v:'0.9.9',
   neu:[['Spielzeit auf dem Game-Over-Bildschirm','Play time on the game over screen'],['Blutaltar gibt immer ein neues Item – bei vollen Slots mit Tausch-Angebot','Blood altar always gives a new item – with a swap offer when slots are full'],['Zonen 4–6 und ihre Bosse etwas schwerer','Zones 4–6 and their bosses slightly harder']],
   fix:[['Truhen öffnen sich erst, wenn man die Höhe ihrer Plattform erreicht','Chests only open once you reach the height of their platform']]},
@@ -3193,26 +3197,27 @@ function buildChests(){
  $('cCoins').textContent=save.coins;
  const locked=ITEMS.filter(i=>!save.unlocked.includes(i.id));
  const ok=c=>save.coins>=c.price&&chestHasNew(c);
- $('chestList').innerHTML=CHESTS.map(c=>`<div class="chest"><div class="cbox" style="--cc:${c.col}"></div><div><div class="cn">${c.name}</div><div class="odds">${c.odds.map((o,i)=>o?`<span style="--rc:${RAR[i].c}">${RAR[i].n} ${o}%</span>`:'').join('')}</div></div><div class="price">${chestHasNew(c)?`<button class="btn${ok(c)?' main':''}" data-chest="${c.id}" ${ok(c)?'':'disabled'}><span class="cic"></span>${c.price}</button>`:`<span class="cempty">${tr('Leer')}</span>`}</div></div>`).join('');
+ $('chestList').innerHTML=CHESTS.map(c=>`<div class="chest"><div class="cbox" style="--cc:${c.col}"></div><div><div class="cn">${c.name}</div><div class="odds"><span style="--rc:${RAR[c.r].c}">${chestLeft(c)?(LANG==='en'?`${chestLeft(c)} / ${chestTotal(c)} new left`:`Noch ${chestLeft(c)} / ${chestTotal(c)} neu`):tr('Alle freigeschaltet')}</span></div></div><div class="price">${chestHasNew(c)?`<button class="btn${ok(c)?' main':''}" data-chest="${c.id}" ${ok(c)?'':'disabled'}><span class="cic"></span>${c.price}</button>`:`<span class="cempty">${tr('Leer')}</span>`}</div></div>`).join('');
  $('chestList').querySelectorAll('[data-chest]').forEach(b=>b.onclick=()=>openChest(b.dataset.chest));
  if(!locked.length)$('reveal').innerHTML=tr('<p class="hint">Alle Items sind freigeschaltet.</p>');
 }
-// Menü-Truhen: würfeln nur die angezeigten Seltenheiten. Doppelte Items geben die Hälfte des Preises zurück.
-function chestRars(c){return c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0).map(x=>x[0])}
-function chestHasNew(c){return ITEMS.some(i=>chestRars(c).includes(i.r)&&!save.unlocked.includes(i.id))}
+// Menü-Truhen: eine Truhe pro Seltenheit, zieht nur noch nicht freigeschaltete Items (keine Duplikate)
+function chestLocked(c){return ITEMS.filter(i=>i.r===c.r&&!save.unlocked.includes(i.id))}
+function chestLeft(c){return chestLocked(c).length}
+function chestTotal(c){return ITEMS.filter(i=>i.r===c.r).length}
+function chestHasNew(c){return chestLeft(c)>0}
 function openChest(id){
  const c=CHESTS.find(x=>x.id===id);
  if(!c||save.coins<c.price||!chestHasNew(c))return;
  audioOn();
- const r=wpick(c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0));
- const it=pick(ITEMS.filter(i=>i.r===r));
- const isNew=!save.unlocked.includes(it.id),refund=isNew?0:Math.floor(c.price/2);
+ const it=pick(chestLocked(c));
+ const isNew=true,refund=0;
  // Ergebnis wird vor der Animation gespeichert, damit Schließen mitten im Drehen nichts verliert
  save.coins-=c.price-refund;if(isNew)save.unlocked.push(it.id);persist();refreshMenu();
  const tag=isNew?`<span class="new">${tr('Neu freigeschaltet')}</span>`:`<span class="dupl">${tr('Schon vorhanden')} · +${refund} ${tr('Münzen zurück')}</span>`;
  const card=`${tileHTML(it.id)}<div><div class="nm">${it.name}</div><div class="meta">${RAR[it.r].n} · ${it.cat} · ${SLOT_N[it.slot]} · ${tag}</div><div class="ds">${it.d}</div></div>`;
  playReel({tag:c.name,title:tr('Truhe öffnet sich'),winner:it,markNew:true,isNew,
-  filler:()=>pick(ITEMS.filter(i=>i.r===wpick(c.odds.map((o,i)=>[i,o]).filter(x=>x[1]>0)))),
+  filler:()=>pick(ITEMS.filter(i=>i.r===c.r)),
   cardHTML:card,btn:tr('Zurück zu den Truhen'),
   done:()=>{buildChests();$('reveal').innerHTML=`<div class="card" style="--rc:${RAR[it.r].c};cursor:default">${card}</div>`;setScreen('scrChests')}});
 }

@@ -163,6 +163,7 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 /* Events */
 .evopt{grid-template-columns:1fr}
 .evopt .nm{color:var(--rc)}
+.evinfo{cursor:default;border-style:dashed;background:transparent}
 /* Evolution */
 .evocard{background:linear-gradient(135deg,rgba(255,122,217,.18),var(--panel) 60%)!important}
 .evos{width:100%;display:flex;flex-direction:column;gap:.3em;text-align:left;font-size:.8em}
@@ -947,9 +948,9 @@ const BOSSES=[
  {type:'golem',name:'Steingolem',hp:650,coin:60,r:48},
  {type:'ooze',name:'Giftschleim',hp:1600,coin:100,r:50},
  {type:'hunter',name:'Himmeljäger',hp:3000,coin:160,r:38},
- {type:'thunder',name:'Donnerkoloss',hp:5200,coin:220,r:52},
- {type:'beast',name:'Inferno-Bestie',hp:8000,coin:300,r:50},
- {type:'warden',name:'Der Wächter',hp:12000,coin:500,r:46,final:true},
+ {type:'thunder',name:'Donnerkoloss',hp:6000,coin:220,r:52},
+ {type:'beast',name:'Inferno-Bestie',hp:9200,coin:300,r:50},
+ {type:'warden',name:'Der Wächter',hp:13800,coin:500,r:46,final:true},
 ];
 const BOSS_H=[500,1500,3000,5000,8000,11500];
 // Endlos-Aufstieg: Nach dem Wächter beginnt Zyklus 2 (alle Zonen und Bosse erneut, stärker). Neue Zonen später einfach in ZONES/BOSSES ergänzen.
@@ -1257,7 +1258,7 @@ function genRow(){
  // Endlos-Aufstieg (nach dem Wächter): deutlich mehr, zähere Gegner und öfter Elite, steigt mit jeder Höhe weiter
  const E=endlessE();
  const E0=E?E-1:0; // 0 am Anfang von Zyklus 2, +1 alle 2500 m
- const ech=h<45?0:Math.min(.85,.08+d*.14+(E?.06+E0*.08:0)),cap=E?Math.min(14,6+Math.floor(E0*1.5)):5;
+ const ech=h<45?0:Math.min(.85,.08+d*.14+(G.zone>=3?.03:0)+(E?.06+E0*.08:0)),cap=E?Math.min(14,6+Math.floor(E0*1.5)):5;
  if(G.enemies.filter(e=>!e.dead&&e.y>G.camY-200).length>=cap)return;
  if(Math.random()<ech)spawnEnemy(h,y-rand(40,95));
  if(E&&Math.random()<Math.min(.5,.08+E0*.07))spawnEnemy(h,y-rand(20,70));
@@ -1276,8 +1277,8 @@ function spawnEnemy(h,y,x){
 }
 function endlessE(){return G&&G.won?1+Math.max(0,G.maxH-BOSS_H[BOSS_H.length-1])/CYCLE_GAP:0}
 function makeEnemy(type,x,y,h){
- const E=endlessE(),d=EN[type],hs=(1+h/900)*(E?1.2+(E-1)*.4:1);
- const e={type,x,y,hx:x,hy:y,hp:d.hp*hs,maxHp:d.hp*hs,r:d.r,dmg:d.dmg*(1+h/4000)*(E?1.05+(E-1)*.1:1),coin:d.coin,col:d.col,t:rand(0,6),vx:0,vy:0,cd:rand(1,2.5),
+ const E=endlessE(),d=EN[type],zh=G&&G.zone>=3?1+.1*(G.zone-2):1,hs=(1+h/900)*(E?1.2+(E-1)*.4:1)*zh; // ab Zone 4 etwas zäher
+ const e={type,x,y,hx:x,hy:y,hp:d.hp*hs,maxHp:d.hp*hs,r:d.r,dmg:d.dmg*(1+h/4000)*(E?1.05+(E-1)*.1:1)*(zh>1?1+(zh-1)*.5:1),coin:d.coin,col:d.col,t:rand(0,6),vx:0,vy:0,cd:rand(1,2.5),
   poison:{t:0,stacks:0},burn:{t:0,dps:0},shield:0,flash:0,dotAcc:0,dotShown:0,dead:false};
  if(type==='charger')e.vx=(Math.random()<.5?-1:1)*rand(170,230);
  G.enemies.push(e);return e;
@@ -1737,7 +1738,8 @@ function update(dt){
 
  // chests
  for(const c of G.chests){c.t+=dt;if(c.pl&&c.pl.alive&&!c.pl.breaking){c.x=c.pl.x+c.ox;c.y=c.pl.y}
-  if(dist2(c.x,c.y-12,p.x,p.y-16)<30*30){c.got=true;burst(c.x,c.y-12,C.violet,20,220,5);openLoot(c.boss?'boss':null);break}}
+  const onPl=c.pl&&c.pl.alive&&!c.pl.breaking?(p.lastLand===c.pl&&Math.abs(p.x-c.x)<c.pl.w/2+16&&p.y-c.y<40):dist2(c.x,c.y-12,p.x,p.y-16)<30*30; // Truhen auf Plattformen erst nach Landung öffnen
+  if(onPl){c.got=true;burst(c.x,c.y-12,C.violet,20,220,5);openLoot(c.boss?'boss':null);break}}
  G.chests=G.chests.filter(c=>!c.got&&c.y<G.camY+H+80);
  for(const ev of G.events){eventPos(ev);if(!ev.used&&(!ev.pl||!ev.pl.chain||ev.pl.vis>.5)&&dist2(ev.x,ev.y-22,p.x,p.y-16)<36*36){triggerEvent(ev);break}}
  G.events=G.events.filter(ev=>ev.y<G.camY+H+100);
@@ -2389,7 +2391,7 @@ function slotsUsed(type){return Object.keys(G.items).filter(id=>IT[id].slot===ty
 function eligible(){return G.pool.map(id=>IT[id]).filter(i=>{if(G.merged.has(i.id)||(i.id==='phoenix'&&G.phoenixUsed))return false;const n=G.items[i.id]||0;if(n>=i.max)return false;if(n>0)return true;return slotsUsed(i.slot)<slotCap(i.slot)})}
 function rarWeights(bias){const h=G.maxH,k=1+.5*st.klee;if(bias==='boss')return[3,30,45*k,22*k];if(bias==='shop')return[30,40,22*k,8*k];return[60,28+h/60,(8+h/90)*k,(1.5+h/350)*k]}
 function rollChoices(bias){
- const wr=rarWeights(bias),avail=eligible(),res=[];
+ const wr=rarWeights(bias),res=[];let avail=eligible();
  for(let k=0;k<(st.karte&&bias!=='shop'?4:3)&&avail.length;k++){
   // owned items get a small boost so upgrades show up regularly
   const fav=CHR().favor||[];const it=wpick(avail.map(i=>[i,(wr[i.r]||.5)*(G.items[i.id]?1.4:1)*(fav.includes(i.id)?2:1)]));
@@ -2448,8 +2450,8 @@ function giveItem(it){
 }
 function chooseLoot(i){
  if(state!=='loot'||$('scrLoot').hidden)return;const it=lootChoices[i];if(!it)return;
- if(it.evo)doEvolve(it.evo);else if(it.ov)giveOv(it);else giveItem(it);
- if(G.extraLoot>0){G.extraLoot--;setScreen(null);state='play';openLoot(null);return}
+ if(it.evo)doEvolve(it.evo);else if(it.ov)giveOv(it);else{if(!G.pool.includes(it.id))G.pool.push(it.id);giveItem(it)}
+ if(G.extraLoot>0){G.extraLoot--;setScreen(null);state='play';const xb=G.extraBias||null;if(!G.extraLoot)G.extraBias=null;openLoot(xb);return}
  setScreen(null);state='play';
 }
 function skipLoot(){if(state!=='loot')return;G.coinF+=15;G.coinsRun=Math.floor(G.coinF);SFX.coin();setScreen(null);state='play'}
@@ -2514,22 +2516,37 @@ const EVENTS={
 const CURSES={hast:{name:'Fluch der Hast',d:'Gegner sind 35% schneller'},bruch:{name:'Fluch der Zerbrechlichkeit',d:'Du erleidest 25% mehr Schaden'}};
 function pickEventType(h){return wpick([['altar',2],['gier',2],['haendler',1.5],['quelle',1.5],['schrein',1.5],['amboss',evoReady().length?4:1.6],['portal',h>300?1.6:0],['ader',h>200?1.3:0]])}
 function eventPos(ev){if(ev.pl&&ev.pl.alive&&!ev.pl.breaking){ev.x=ev.pl.x+ev.ox;ev.y=ev.pl.y}return ev}
-// Blutaltar: episches/legendäres Item aus ALLEN Items (auch gesperrte, auch außerhalb des Pools) – gilt nur für diesen Run
-function altarItem(){
- const fits=ITEMS.filter(i=>i.r>=2&&!G.merged.has(i.id)&&!(i.id==='phoenix'&&G.phoenixUsed)&&(G.items[i.id]||0)<i.max&&((G.items[i.id]||0)>0||slotsUsed(i.slot)<slotCap(i.slot)));
- if(!fits.length){for(const o of ovPick(2))giveOv(o);toast(tr('Kein Item passt mehr: 2 Überladungen erhalten'),'gold');return null}
- const it=wpick(fits.map(i=>[i,i.r===3?3:7]));if(!G.pool.includes(it.id))G.pool.push(it.id);
+// Blutaltar: episches/legendäres NEUES Item aus ALLEN Items (auch gesperrte) – gilt nur für diesen Run.
+// Bei vollem Slot wird zufällig ein eigenes Item getauscht – vorher wird gefragt.
+function altarCands(){return ITEMS.filter(i=>i.r>=2&&!G.items[i.id]&&!G.merged.has(i.id)&&!(i.id==='phoenix'&&G.phoenixUsed))}
+function altarVictims(slot){return Object.keys(G.items).filter(id=>IT[id].slot===slot&&!IT[id].evo&&!G.merged.has(id))}
+function altarPay(){const p=G.p;p.hp-=p.maxHp*.25;burst(p.x,p.y-16,C.coral,20,200,4);SFX.hurt()}
+function altarGive(it){if(!G.pool.includes(it.id))G.pool.push(it.id);
  giveItem(it);itemPop(it);const locked=!save.unlocked.includes(it.id);
- toast(tr('Erhalten: ')+it.name+' ('+RAR[it.r].n+')'+(locked?tr(' · nur für diesen Run'):''),'gold');return it}
+ toast(tr('Erhalten: ')+it.name+' ('+RAR[it.r].n+')'+(locked?tr(' · nur für diesen Run'):''),'gold')}
+function removeItemRun(id){const p=G.p;delete G.items[id];if(id==='phoenix')p.revive=false;
+ st=computeStats(G.items);p.maxHp=calcMaxHp();p.hp=Math.min(p.hp,p.maxHp);hudCache={}}
+function altarOffer(ev){
+ const all=altarCands(),free=all.filter(i=>slotsUsed(i.slot)<slotCap(i.slot));
+ if(free.length){altarPay();altarGive(wpick(free.map(i=>[i,i.r===3?3:7])));return}
+ const sw=all.filter(i=>altarVictims(i.slot).length);
+ if(!sw.length){altarPay();for(const o of ovPick(2))giveOv(o);toast(tr('Kein Item passt mehr: 2 Überladungen erhalten'),'gold');return}
+ const it=wpick(sw.map(i=>[i,i.r===3?3:7])),vs=altarVictims(it.slot),vid=vs[Math.floor(Math.random()*vs.length)],v=IT[vid],lv=G.items[vid];
+ showEvent(ev,tr('Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.'),[
+  {label:tr('Erhalten: ')+it.name+' ('+RAR[it.r].n+')',sub:it.d,col:RAR[it.r].c,info:true},
+  {label:tr('Verlieren: ')+v.name+(lv>1?' ('+tr('Stufe')+' '+lv+')':''),sub:v.d,col:C.coral,info:true},
+  {label:tr('Tauschen: −25% LP'),sub:it.name+' ⇄ '+v.name,col:'#c0392b',fn:()=>{altarPay();removeItemRun(vid);altarGive(it);toast(v.name+tr(' ist verschwunden'))}},
+  {label:tr('Ablehnen'),sub:tr('Kein Opfer, nichts passiert')}]);
+ return'keep'}
 function giveRandomItem(weights){const el=eligible();if(!el.length){G.coinF+=50;G.coinsRun=Math.floor(G.coinF);toast(tr('Build komplett: +50 Münzen'),'gold');return null}
  const it=wpick(el.map(i=>[i,weights[i.r]||.2]));giveItem(it);itemPop(it);toast(tr('Erhalten: ')+it.name+' ('+RAR[it.r].n+')','gold');return it}
 function showEvent(ev,text,opts){
  state='loot';keys.left=keys.right=false;
  $('evTitle').textContent=EVENTS[ev.type].name;$('evTitle').style.color=EVENTS[ev.type].col;$('evText').textContent=text;
  const box=$('evOpts');box.textContent='';
- opts.forEach((o,i)=>{const b=document.createElement('button');b.className='card evopt';b.disabled=!!o.disabled;b.style.setProperty('--rc',o.col||'var(--text)');
+ opts.forEach((o,i)=>{const b=document.createElement(o.info?'div':'button');b.className='card evopt'+(o.info?' evinfo':'');b.disabled=!!o.disabled;b.style.setProperty('--rc',o.col||'var(--text)');
   const d=document.createElement('div');const nm=document.createElement('div');nm.className='nm';nm.textContent=o.label;const ds=document.createElement('div');ds.className='ds';ds.textContent=o.sub||'';d.append(nm,ds);b.append(d);
-  b.onclick=()=>{if(b.disabled)return;const r=o.fn&&o.fn();if(r!=='keep')closeEvent()};box.appendChild(b)});
+  if(!o.info)b.onclick=()=>{if(b.disabled)return;const r=o.fn&&o.fn();if(r!=='keep')closeEvent()};box.appendChild(b)});
  setScreen('scrEvent');SFX.loot();setTimeout(()=>{const f=box.querySelector('button:not([disabled])');if(f)f.focus({preventScroll:true})},40);
 }
 function closeEvent(){if($('scrEvent').hidden)return;setScreen(null);if(state==='loot')state='play';last=performance.now()}
@@ -2537,7 +2554,7 @@ function triggerEvent(ev){
  const p=G.p,m=priceMul();ev.used=true;
  switch(ev.type){
   case'altar':showEvent(ev,tr('Ein uralter Altar verlangt ein Opfer. Gib einen Teil deiner Lebenskraft und erhalte ein mächtiges Item.'),[
-   {label:tr('Opfern: −25% LP'),sub:tr('Episch oder legendär, aus allen Items (auch gesperrten)'),col:'#c0392b',disabled:p.hp<=p.maxHp*.3,fn:()=>{p.hp-=p.maxHp*.25;burst(p.x,p.y-16,C.coral,20,200,4);SFX.hurt();altarItem()}},
+   {label:tr('Opfern: −25% LP'),sub:tr('Neues episches oder legendäres Item, aus allen Items (auch gesperrten)'),col:'#c0392b',disabled:p.hp<=p.maxHp*.3,fn:()=>altarOffer(ev)},
    {label:tr('Weitergehen'),sub:tr('Nichts passiert')}]);break;
   case'gier':{const price=Math.round(30*m);showEvent(ev,tr('Eine goldene Kiste. Sie flüstert: „Füttere mich.“ Manche Kisten beißen zurück.'),[
    {label:`${tr('Öffnen:')} ${price} ${tr('Münzen')}`,sub:tr('50%: seltenes Item · 50%: Mimic greift an'),col:C.gold,disabled:G.coinsRun<price,fn:()=>{spend(price);if(Math.random()<.5)giveRandomItem([0,6,3,1]);else{const e=makeElite('mimic',clamp(ev.x,40,W-40),ev.y-70);toast(tr('Es war ein Mimic!'));shake(6);SFX.boss()}}},
@@ -2683,8 +2700,13 @@ async function openBoard(){
 // Name eingeben (beim ersten Start oder über die Einstellungen)
 let afterName=null;
 function askName(then){afterName=then||null;$('nameInput').value=save.name||'';$('nameErr').textContent='';setScreen('scrName');setTimeout(()=>$('nameInput').focus(),30)}
+// Namensfilter (gleiche Liste wie auf dem Server in lj_name_ok)
+const NAME_BAD=['hitler','nazi','siegheil','heilhit','nsdap','judensau','fotze','wichser','hurensohn','arschloch','schlampe','nutte','ficken','fick','schwuchtel','spast','missgeburt','kanake','vergewalt','neger','nigger','nigga','kike','fuck','cunt','whore','bitch','faggot','fagot','retard','tranny','pussy','penis','vagina','porno','porn','wixer','wixxer'];
+function nameNorm(n){const s=String(n||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[0134579@$!|]/g,c=>({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','9':'g','@':'a','$':'s','!':'i','|':'i'})[c]).replace(/[^a-z]/g,'');return[s,s.replace(/(.)\1+/g,'$1')]}
+function nameOk(n){const[a,b]=nameNorm(n);return!NAME_BAD.some(w=>a.includes(w)||b.includes(w))}
 function confirmName(){const v=$('nameInput').value.replace(/\s+/g,' ').trim().slice(0,16);
  if(v.length<2){$('nameErr').textContent=tr('Bitte mindestens 2 Zeichen eingeben.');return}
+ if(!nameOk(v)){$('nameErr').textContent=tr('Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.');return}
  save.name=v;ensureIds();persist();refreshMenu();
  const f=afterName;afterName=null;if(f)f();else setScreen('scrMenu')}
 // Online-Bestwert ist maßgeblich: Wurde ein Eintrag gelöscht/korrigiert, übernimmt das Gerät den Wert aus der Bestenliste
@@ -2713,7 +2735,7 @@ function die(cause){
   $('oCause').textContent=(G.won?tr('Gipfel bezwungen · '):'')+(cause===tr('Abgestürzt')?tr('Abgestürzt'):tr('Besiegt von: ')+cause);
   $('oRec').innerHTML=newRec?tr('<div class="newrec">Neuer Rekord!</div>'):'';
   $('oBoard').textContent=G.test?tr('Testmodus: kein Eintrag in die Bestenliste.'):'';submitRun();
-  const rows=[[tr('Erreichte Höhe'),Math.floor(G.maxH)+' m'],[tr('Persönlicher Rekord'),save.record+' m'],[tr('Münzen verdient'),'+'+G.coinsRun],[tr('Beim Händler ausgegeben'),G.coinsSpent],[tr('Gegner besiegt'),G.kills],[tr('Bosse besiegt'),G.bossKills.length?G.bossKills.join(', '):tr('keine')],[tr('Höchster Treffer'),Math.round(G.maxHit)],[tr('Gesamtschaden'),Math.round(G.dmgDealt)]];
+  const ts=Math.round(G.t),rows=[[tr('Erreichte Höhe'),Math.floor(G.maxH)+' m'],[tr('Spielzeit'),Math.floor(ts/60)+':'+String(ts%60).padStart(2,'0')],[tr('Persönlicher Rekord'),save.record+' m'],[tr('Münzen verdient'),'+'+G.coinsRun],[tr('Beim Händler ausgegeben'),G.coinsSpent],[tr('Gegner besiegt'),G.kills],[tr('Bosse besiegt'),G.bossKills.length?G.bossKills.join(', '):tr('keine')],[tr('Höchster Treffer'),Math.round(G.maxHit)],[tr('Gesamtschaden'),Math.round(G.dmgDealt)]];
   $('oStats').innerHTML=rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
   $('oInfo').hidden=true;$('oBuild').innerHTML=chipsHTML(G.items)+ovHudHTML();fillUnlocks($('oUnl'));
   setScreen('scrOver');$('bAgain').focus({preventScroll:true});
@@ -2836,9 +2858,10 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
+Object.assign(EN_TXT,{'Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.8';
+const GAME_VER='0.9.9';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -3031,6 +3054,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.9',
+  neu:[['Spielzeit auf dem Game-Over-Bildschirm','Play time on the game over screen'],['Blutaltar gibt immer ein neues Item – bei vollen Slots mit Tausch-Angebot','Blood altar always gives a new item – with a swap offer when slots are full'],['Zonen 4–6 und ihre Bosse etwas schwerer','Zones 4–6 and their bosses slightly harder']],
+  fix:[['Truhen öffnen sich erst, wenn man wirklich auf ihrer Plattform landet','Chests only open once you actually land on their platform']]},
  {v:'0.9.8',
   neu:[],
   fix:[['Bestenliste gegen Manipulation abgesichert','Leaderboard secured against tampering']]},
@@ -3238,6 +3264,7 @@ function buildColl(){
 }
 function buildLife(){$('lifeStats').innerHTML=[[tr('Runs gespielt'),save.runs],[tr('Gegner besiegt'),save.kills],[tr('Bosse besiegt'),save.bosses],[tr('Rekord'),save.record+' m']].map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('')}
 
+if(save.name&&!nameOk(save.name)){save.name='';persist()}
 $('bStart').onclick=()=>{audioOn();save.name?openLoadout():askName(openLoadout)};
 $('bBoard').onclick=()=>openBoard();
 $('bPauseTouch').onclick=e=>{e.stopPropagation();state==='play'?pause():resume()};

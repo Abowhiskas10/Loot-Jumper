@@ -2642,24 +2642,21 @@ function drawTide(){const t=G.tide;if(!t||t.y>G.camY+H+40)return;const y0=t.y,bo
 /* ================= BESTENLISTE (online über Supabase, sonst lokal) ================= */
 const CFG=window.LJ_CONFIG||{};
 const ONLINE=!!(CFG.supabaseUrl&&CFG.supabaseKey);
+function ensureIds(){let ch=false;if(!save.pid){save.pid=uuid();ch=true}if(!save.psec||save.psec.length<24){const a=new Uint8Array(24);try{crypto.getRandomValues(a)}catch(e){for(let i=0;i<24;i++)a[i]=Math.random()*256|0}save.psec=[...a].map(b=>b.toString(16).padStart(2,'0')).join('');ch=true}if(ch)persist()}
 function uuid(){try{if(crypto.randomUUID)return crypto.randomUUID()}catch(e){}return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function sbHeaders(){const h={'apikey':CFG.supabaseKey,'Content-Type':'application/json'};if(String(CFG.supabaseKey).startsWith('eyJ'))h.Authorization='Bearer '+CFG.supabaseKey;return h}
 const Board={
- async fetchTop(){
+ // Sicher: Geräte-IDs werden nicht mehr öffentlich gelesen; Einträge ändern geht nur mit dem geheimen Geräte-Schlüssel
+ async rpc(fn,body){
   if(!ONLINE)throw new Error('offline');
-  const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/scores?select=player,name,score,zone&order=score.desc&limit=50',{headers:sbHeaders()});
-  if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();
+  const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:sbHeaders(),body:JSON.stringify(body)});
+  if(!r.ok)throw new Error('HTTP '+r.status);return r.status===204?null:await r.json();
  },
- async submit(score,zone){
-  if(!ONLINE)throw new Error('offline');
-  const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/rpc/submit_score',{method:'POST',headers:sbHeaders(),body:JSON.stringify({p_player:save.pid,p_name:save.name,p_score:score,p_zone:zone})});
-  if(!r.ok)throw new Error('HTTP '+r.status);
+ async fetchTop(){return await Board.rpc('get_leaderboard',{p_player:save.pid||null})},
+ async submit(run){ensureIds();
+  return await Board.rpc('submit_score',{p_player:save.pid,p_secret:save.psec,p_name:save.name,p_score:run.score,p_zone:run.zone,p_cyc:run.cyc,p_bosses:run.bosses,p_dur:run.dur});
  },
- async fetchMine(){
-  if(!ONLINE||!save.pid)throw new Error('offline');
-  const r=await fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/rest/v1/scores?select=score&player=eq.'+encodeURIComponent(save.pid),{headers:sbHeaders()});
-  if(!r.ok)throw new Error('HTTP '+r.status);const a=await r.json();return a.length?a[0].score:null;
- },
+ async fetchMine(){if(!save.pid)throw new Error('no id');return await Board.rpc('get_my_best',{p_player:save.pid})},
  local(){return(save.localBoard||[]).slice().sort((a,b)=>b.score-a.score)},
  addLocal(score,zone){const L=save.localBoard||(save.localBoard=[]);const ex=L.find(e=>e.name===save.name);if(ex){if(score>ex.score){ex.score=score;ex.zone=zone}}else L.push({name:save.name,score,zone});L.sort((a,b)=>b.score-a.score);save.localBoard=L.slice(0,20);persist()},
 };
@@ -2667,7 +2664,7 @@ function renderBoard(list,isOnline,el,highlight){
  el.textContent='';
  if(!list.length){const p=document.createElement('p');p.className='hint';p.textContent=tr('Noch keine Einträge. Sei die oder der Erste!');el.appendChild(p);return}
  list.slice(0,isOnline?50:20).forEach((e,i)=>{
-  const row=document.createElement('div');row.className='brow'+((isOnline?e.player===save.pid:e.name===save.name)?' me':'');
+  const row=document.createElement('div');row.className='brow'+((isOnline?e.is_me:e.name===save.name)?' me':'');
   const rk=document.createElement('span');rk.className='brk';rk.textContent=(i+1)+'.';
   const nm=document.createElement('span');nm.className='bnm';nm.textContent=e.name;
   const zn=document.createElement('span');zn.className='bzn';zn.textContent=tr('Zone ')+(e.zone||1);
@@ -2688,7 +2685,7 @@ let afterName=null;
 function askName(then){afterName=then||null;$('nameInput').value=save.name||'';$('nameErr').textContent='';setScreen('scrName');setTimeout(()=>$('nameInput').focus(),30)}
 function confirmName(){const v=$('nameInput').value.replace(/\s+/g,' ').trim().slice(0,16);
  if(v.length<2){$('nameErr').textContent=tr('Bitte mindestens 2 Zeichen eingeben.');return}
- save.name=v;if(!save.pid)save.pid=uuid();persist();refreshMenu();
+ save.name=v;ensureIds();persist();refreshMenu();
  const f=afterName;afterName=null;if(f)f();else setScreen('scrMenu')}
 // Online-Bestwert ist maßgeblich: Wurde ein Eintrag gelöscht/korrigiert, übernimmt das Gerät den Wert aus der Bestenliste
 function syncRecord(best){if(best==null||best>=save.record)return;save.record=best;persist();refreshMenu()}
@@ -2699,7 +2696,7 @@ async function submitRun(){
  Board.addLocal(score,zone);
  if(!ONLINE){$('oBoard').textContent=tr('Lokale Bestenliste aktualisiert.');return}
  $('oBoard').textContent=tr('Score wird eingetragen …');
- try{await Board.submit(score,zone);await syncRecordOnline();const list=await Board.fetchTop();const i=list.findIndex(e=>e.player===save.pid);
+ try{const run={score,zone,cyc:Math.floor(G.bossIdx/BOSSES.length),bosses:G.bossIdx,dur:Math.round(G.t)};await Board.submit(run);await syncRecordOnline();const list=await Board.fetchTop();const i=list.findIndex(e=>e.is_me);
   $('oBoard').textContent=i>=0?`${tr('Bestenliste: Platz')} ${i+1} ${tr('von')} ${list.length}`+(list[i].score>score?` (${tr('dein Bestwert:')} ${list[i].score} m)`:''):tr('Score eingetragen.')}
  catch(e){$('oBoard').textContent=tr('Bestenliste gerade nicht erreichbar. Dein Score ist lokal gespeichert.')}
 }
@@ -2841,7 +2838,7 @@ Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testm
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.7';
+const GAME_VER='0.9.8';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -3034,6 +3031,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.8',
+  neu:[],
+  fix:[['Bestenliste gegen Manipulation abgesichert','Leaderboard secured against tampering']]},
  {v:'0.9.7',
   neu:[['Neues Titelbild mit Logo und Zonen-Panorama','New title screen with logo and zone panorama']],
   fix:[]},

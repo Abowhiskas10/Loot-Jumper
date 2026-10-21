@@ -43,6 +43,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .hgt{font-family:var(--display);font-size:2em;line-height:1;text-shadow:0 2px 0 var(--ink);font-variant-numeric:tabular-nums}
 .hgt small{font-size:.45em;margin-left:.15em;color:var(--muted)}
 .rec{color:var(--muted);font-size:.72em;letter-spacing:.12em;text-transform:uppercase;margin-top:.25em}
+.shophp{position:relative;width:min(16em,80%);height:1.35em;margin:.45em auto .1em;border:2px solid var(--ink);border-radius:.4em;background:#2a1418;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.shophpf{position:absolute;left:0;top:0;bottom:0;background:var(--hc,#5fd06a);transition:width .3s}
+.shophp span{position:relative;display:block;text-align:center;font-weight:700;font-size:.8em;line-height:1.55em;color:#fff;text-shadow:0 1px 0 var(--ink),0 0 3px var(--ink);font-variant-numeric:tabular-nums}
 .coins{font-family:var(--display);color:var(--gold);font-size:1.35em;display:flex;gap:.35em;align-items:center;text-shadow:0 2px 0 var(--ink);font-variant-numeric:tabular-nums}
 .cic{width:.78em;height:.78em;border-radius:50%;background:var(--gold);border:2px solid var(--ink);box-shadow:inset -.12em -.12em 0 #b5862a;flex:none}
 .hpwrap{display:flex;align-items:center;gap:.45em;margin-top:.45em}
@@ -479,6 +482,7 @@ html.touch .card kbd{display:none}
     <div class="tag" id="shopTag">Nach dem Bosskampf</div>
     <h2 id="shopTitle">Händler</h2>
     <div class="coins" style="justify-content:center"><span class="cic"></span><span id="sCoins">0</span></div>
+    <div class="shophp" id="shopHp"><div class="shophpf" id="shopHpF"></div><span id="shopHpT"></span></div>
     <p class="hint" id="shopSlots"></p>
     <div class="cards" id="shopItems"></div>
     <div class="services" id="shopServ"></div>
@@ -2611,7 +2615,7 @@ function shopServices(){const p=G.p,m=priceMul()*(CHR().id==='gluck'?.75:1);retu
 function spend(n){if(G.coinsRun<n)return false;G.coinF-=n;G.coinsRun=Math.floor(G.coinF);G.coinsSpent+=n;SFX.coin();return true}
 function openShop(){state='loot';keys.left=keys.right=false;G.shopRolls=0;G.elixirBought=false;sellArm=null;rollShop();renderShop();setScreen('scrShop');setTimeout(()=>$('bShopGo').focus({preventScroll:true}),30)}
 function renderShop(){
- const p=G.p;$('sCoins').textContent=G.coinsRun;$('shopSlots').textContent=slotLine()+tr(' · LP ')+Math.ceil(p.hp)+'/'+p.maxHp;
+ const p=G.p;$('sCoins').textContent=G.coinsRun;$('shopSlots').textContent=slotLine();{const f=Math.max(0,Math.min(1,p.hp/p.maxHp));$('shopHpF').style.width=(f*100)+'%';$('shopHpF').style.setProperty('--hc',f<.3?'#ff5a4e':f<.6?'#f2c14e':'#5fd06a');$('shopHpT').textContent=tr('Leben')+' '+Math.ceil(p.hp)+' / '+p.maxHp}
  const el=eligible();
  $('shopItems').innerHTML=shopOffers.length?shopOffers.map((o,i)=>{if(o.ov){const pr=ovPrice();return`<button class="card shopcard ovcard" data-buy="${i}" style="--rc:${OV_COL}" ${!o.sold&&G.coinsRun>=pr?'':'disabled'}>${ovCard(o.ov)}<div class="pr">${o.sold?tr('Gekauft'):`<span class="cic"></span>${pr}`}</div></button>`}
   const pr=itemPrice(o.it),ok=!o.sold&&el.includes(o.it)&&G.coinsRun>=pr;
@@ -2859,10 +2863,10 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
-Object.assign(EN_TXT,{'Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
+Object.assign(EN_TXT,{'Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.10';
+const GAME_VER='0.9.11';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -3055,6 +3059,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.11',
+  neu:[['Lebensleiste im Händler','Health bar in the shop']],
+  fix:[]},
  {v:'0.9.10',
   neu:[['Eine Truhe pro Seltenheit – keine Duplikate mehr, Anzeige wie viele Items noch fehlen','One chest per rarity – no more duplicates, shows how many items are left']],
   fix:[]},

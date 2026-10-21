@@ -128,6 +128,12 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 .reveal{min-height:5.4em;width:100%;display:flex;align-items:center;justify-content:center}
 .reveal .card{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
+.btn.daily{border-color:var(--ink);box-shadow:inset 0 0 0 2px #5fe0c8;color:#9ff3e2}
+.dchar{display:flex;gap:.75em;align-items:center;text-align:left;background:var(--panel);border:2px solid var(--ink);border-radius:.6em;padding:.5em .7em;width:100%;box-shadow:inset 0 0 0 1px var(--line)}
+.dchar img{width:3.4em;height:3.4em;flex:none}.dchar b{display:block}.dchar small{color:var(--muted);font-size:.75em;line-height:1.3;display:block}
+.dinfo{display:grid;grid-template-columns:repeat(3,1fr);gap:.45em;width:100%;margin-top:.3em}
+.dinfo div{background:var(--panel);border:2px solid var(--ink);border-radius:.5em;padding:.35em .2em;display:flex;flex-direction:column;align-items:center}
+.dinfo b{font-family:var(--display);font-size:1.2em;color:var(--gold)}.dinfo span{font-size:.62em;color:var(--muted);font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.45em;width:100%}
 .cell{background:var(--panel);border:2px solid var(--ink);border-radius:.5em;padding:.45em .25em;display:flex;flex-direction:column;align-items:center;gap:.25em;box-shadow:inset 0 0 0 1px var(--line);min-width:0}
 .cell .tile{width:2.2em;height:2.2em;font-size:.85em}
@@ -381,6 +387,7 @@ html.touch .card kbd{display:none}
     </div>
     <div class="btns">
       <button class="btn main" id="bStart">Run starten</button>
+      <button class="btn daily" id="bDaily">Tages-Challenge</button>
       <button class="btn" id="bChests">Truhen öffnen</button>
       <button class="btn" id="bWs">Werkstatt</button>
       <button class="btn" id="bBoard">Bestenliste</button>
@@ -420,6 +427,22 @@ html.touch .card kbd{display:none}
   </div>
 
   <!-- Leaderboard -->
+  <div class="ov top" id="scrDaily" hidden>
+    <button class="back" data-back>← Zurück</button>
+    <div class="tag" id="dDate"></div>
+    <h2>Tages-Challenge</h2>
+    <p class="hint">Alle spielen heute dieselbe Welt mit demselben Charakter und denselben 12 Items. Ohne Werkstatt-Upgrades. Neue Challenge um 00:00 Uhr (deutsche Zeit).</p>
+    <div class="dchar" id="dChar"></div>
+    <div class="grid" id="dItems"></div>
+    <p class="hint" id="dItemInfo" style="min-height:2.6em"></p>
+    <div class="dinfo"><div><b id="dTries">–</b><span>Versuche übrig</span></div><div><b id="dBest">–</b><span>Dein Bestwert</span></div><div><b id="dStreak">0</b><span>Serie (Tage)</span></div></div>
+    <p class="hint" id="dStatus"></p>
+    <div class="btns"><button class="btn main" id="bDailyGo">Versuch starten</button><button class="btn" id="bDailyReset" hidden>Test: Versuche zurücksetzen</button></div>
+    <h2 style="margin-top:.6em">Heute</h2>
+    <div class="board" id="dBoard"></div>
+    <p class="hint">Top 10 des Vortags: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 Münzen.<br>Serie: 20 / 30 / 40 / 50 / 60 / 70 Münzen, ab Tag 7 je 100 und die Kalenderkrone.</p>
+  </div>
+
   <div class="ov top" id="scrBoard" hidden>
     <button class="back" data-back>← Zurück</button>
     <h2>Bestenliste</h2>
@@ -457,6 +480,7 @@ html.touch .card kbd{display:none}
       <label class="vol" for="volMus"><span>Musik</span><input type="range" id="volMus" min="0" max="100" step="5"><b id="volMusV">60%</b></label>
       <label class="vol" for="volSfx"><span>Effekte</span><input type="range" id="volSfx" min="0" max="100" step="5"><b id="volSfxV">80%</b></label>
       <button class="btn" id="bShake">Bildschirmwackeln: an</button>
+      <button class="btn" id="bVib">Vibration: an</button>
       <button class="btn" id="bLang">Sprache: Deutsch</button>
       <button class="btn" id="bTips">Tipps: an</button>
       <button class="btn" id="bNews">Was ist neu?</button>
@@ -805,6 +829,10 @@ const stage=document.getElementById('stage'),cv=document.getElementById('cv'),ct
 const $=id=>document.getElementById(id);
 let scale=1;
 
+let hapT=0;function haptic(kind){if(save&&save.vib===false)return;const now=performance.now();if(kind==='hit'&&now-hapT<150)return;hapT=now;
+ try{const Hp=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Haptics;
+  if(Hp){if(kind==='hit')Hp.impact({style:'HEAVY'});else Hp.vibrate({duration:kind==='boss'?400:280});return}
+  if(navigator.vibrate)navigator.vibrate(kind==='hit'?40:kind==='boss'?[90,70,180]:[220])}catch(e){}}
 const rand=(a,b)=>a+Math.random()*(b-a), randi=(a,b)=>Math.floor(rand(a,b+1));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -1147,14 +1175,78 @@ function computeStatsBase(it){
  };
 }
 
-function newRun(){$('itemPop').hidden=true;
+/* ================= TAGES-CHALLENGE ================= */
+function berlinDay(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5))}
+function strHash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// Tageskonfiguration: aus dem Datum berechnet, auf allen Geräten gleich
+function dailyCfg(day){
+ const r=mulberry(strHash('lj-daily-'+day)),chars=CHARS.filter(c=>!c.secret),ch=chars[Math.floor(r()*chars.length)];
+ const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+ let pool=[];for(let k=0;k<40;k++){pool=[];for(const [rr,n] of[[0,4],[1,4],[2,3],[3,1]])pool.push(...shuf(ITEMS.filter(i=>i.r===rr)).slice(0,n).map(i=>i.id));
+  const f=pool.filter(id=>IT[id].slot==='f').length;if(f>=4&&pool.length-f>=4)break}
+ return{day,char:ch.id,pool}}
+let dailyCur=null;
+function dailyToday(){const d=berlinDay(0);if(!dailyCur||dailyCur.day!==d)dailyCur=dailyCfg(d);return dailyCur}
+// Welt-Zufall: jede Plattform-Reihe hat ihren eigenen festen Zufall, damit alle dieselbe Welt bekommen
+function genRow(){if(!G.wseed)return genRowRaw();const mr=Math.random;Math.random=mulberry((G.wseed+Math.imul(++G.rowN,0x9E3779B1))>>>0);try{genRowRaw()}finally{Math.random=mr}}
+const DAILY_TOP=[300,200,150,100,80,70,60,50,40,30],DAILY_STREAK=[20,30,40,50,60,70,100];
+function dailyStreakTick(day){const s=save.dstreak||(save.dstreak={n:0,last:null,best:0});if(s.last===day)return null;
+ s.n=s.last===dayBefore(day)?s.n+1:1;s.last=day;s.best=Math.max(s.best||0,s.n);
+ const coins=DAILY_STREAK[Math.min(s.n,7)-1];save.coins+=coins;persist();return{n:s.n,coins,hat:s.n===7}}
+function dayBefore(day){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)}
+function streakNow(){const s=save.dstreak;if(!s||!s.last)return 0;return(s.last===berlinDay(0)||s.last===berlinDay(-1))?s.n:0}
+async function dailyClaim(){if(!ONLINE||!save.pid||!save.psec)return;const t=berlinDay(0);if(save.dclaim===t)return;
+ try{const rk=await dailyRpc('daily_claim',{p_player:save.pid,p_secret:save.psec});save.dclaim=t;
+  if(rk>0){const c=DAILY_TOP[rk-1];save.coins+=c;persist();refreshMenu();toast(tr('Tages-Challenge gestern: Platz ')+rk+' · +'+c+' '+tr('Münzen'),'gold');SFX.legend&&SFX.legend()}else persist()}catch(e){}}
+// Ohne Server (z. B. Test-Artifact): Tages-Challenge wird lokal simuliert, nur im Testmodus
+function dailyLocal(){return!ONLINE&&CFG.devMode!==false}
+async function dailyRpc(fn,b){if(ONLINE)return Board.rpc(fn,b);if(!dailyLocal())throw new Error('offline');
+ const t=berlinDay(0);let m=save.dmock;if(!m||m.day!==t)m=save.dmock={day:t,tries:0,best:0};
+ if(fn==='daily_status')return[{tries:m.tries,best:m.best}];
+ if(fn==='daily_start'){if(m.tries>=3)throw new Error('HTTP 400');m.tries++;persist();return 3-m.tries}
+ if(fn==='daily_submit'){m.best=Math.max(m.best,b.p_score);persist();return'ok'}
+ if(fn==='daily_board')return m.best?[{name:save.name,score:m.best,zone:1,cyc:0,is_me:true}]:[];
+ if(fn==='daily_claim')return 0;return null}
+async function openDaily(){
+ if(!save.name){askName(openDaily);return}
+ ensureIds();const dc=dailyToday(),ch=CH_BY[dc.char];setScreen('scrDaily');
+ const [y,m,d]=dc.day.split('-');$('dDate').textContent=d+'.'+m+'.'+y;
+ $('dChar').innerHTML=`<img src="${portraitURL(ch.id)}" alt=""><div><b>${ch.name}</b><small>${ch.weapon} · ${ch.wd}</small><small>${ch.pd}</small></div>`;
+ $('dItems').innerHTML=dc.pool.map(id=>{const it=IT[id];return`<button class="cell" data-dit="${id}" style="--rc:${RAR[it.r].c};border-color:var(--ink)">${tileHTML(id)}<div class="cnm">${it.name}</div></button>`}).join('');
+ $('dItems').querySelectorAll('[data-dit]').forEach(b=>b.onclick=()=>{const it=IT[b.dataset.dit];$('dItemInfo').textContent=it.name+' ('+RAR[it.r].n+'): '+it.d});
+ $('dItemInfo').textContent='';$('dStreak').textContent=streakNow();$('dTries').textContent='–';$('dBest').textContent='–';
+ const go=$('bDailyGo');go.disabled=true;
+ if(!ONLINE&&!dailyLocal()){$('dStatus').textContent=tr('Die Tages-Challenge braucht eine Internetverbindung.');renderBoard([],true,$('dBoard'));return}
+ $('dStatus').textContent=tr('Lade …');if(ONLINE)dailyClaim();
+ try{const [stt]=await dailyRpc('daily_status',{p_player:save.pid});const left=3-(stt?stt.tries:0);
+  $('dTries').textContent=left;$('dBest').textContent=stt&&stt.best?stt.best+' m':'–';go.disabled=left<=0;
+  $('dStatus').textContent=(left>0?'':tr('Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.'))+(dailyLocal()?' '+tr('Testmodus: ohne Server, nur auf diesem Gerät.'):'');$('bDailyReset').hidden=!dailyLocal();
+  renderBoard(await dailyRpc('daily_board',{p_player:save.pid}),true,$('dBoard'))}
+ catch(e){$('dStatus').textContent=tr('Server nicht erreichbar. Bitte später nochmal versuchen.')}
+}
+async function startDaily(){const go=$('bDailyGo');if(go.disabled)return;go.disabled=true;audioOn();ensureIds();
+ const dc=dailyToday();
+ try{await dailyRpc('daily_start',{p_player:save.pid,p_secret:save.psec});newRun(dc)}
+ catch(e){$('dStatus').textContent=String(e.message).includes('400')?tr('Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.'):tr('Server nicht erreichbar. Bitte später nochmal versuchen.');openDaily()}}
+async function submitDaily(){
+ const score=Math.floor(G.maxH),zone=G.zone+1;
+ $('oBoard').textContent=tr('Tages-Challenge wird eingetragen …');
+ try{await dailyRpc('daily_submit',{p_player:save.pid,p_secret:save.psec,p_name:save.name,p_score:score,p_zone:zone,p_cyc:Math.floor(G.bossIdx/BOSSES.length),p_bosses:G.bossIdx,p_dur:Math.round(G.t)});
+  const list=await dailyRpc('daily_board',{p_player:save.pid});const i=list.findIndex(e=>e.is_me);
+  $('oBoard').textContent=i>=0?`${tr('Tages-Challenge: Platz')} ${i+1} ${tr('von')} ${list.length}`+(list[i].score>score?` (${tr('dein Bestwert:')} ${list[i].score} m)`:''):tr('Score eingetragen.')}
+ catch(e){$('oBoard').textContent=tr('Tages-Challenge gerade nicht erreichbar.')}
+}
+
+function newRun(dc){$('itemPop').hidden=true;
  save.pool=validPool(save.pool);
  if(!save.chars.includes(save.char))save.char='abenteurer';
- G={char:save.char,hitTaken:false,tideTouched:false,t:0,items:{},pool:save.pool.slice(),
+ G={char:dc?dc.char:save.char,hitTaken:false,tideTouched:false,t:0,items:{},pool:dc?dc.pool.slice():save.pool.slice(),
   p:{x:W/2,y:30,vx:0,vy:-950,hp:100,maxHp:100,inv:0,face:1,squash:0,shieldT:0,shieldReady:false,revive:false,lastLand:null},
   camY:30-H*0.78,platforms:[],enemies:[],shots:[],eshots:[],coins:[],chests:[],parts:[],texts:[],rings:[],bolts:[],warns:[],
   nextY:30,maxH:0,tide:null,beams:[],wind:null,chainN:0,chainCur:null,chainX:null,tideSnd:0,zoneFrom:0,zoneT:1,zoneBanner:false,coinF:0,coinsRun:0,kills:0,bossKills:[],nextLootH:55,bossIdx:0,boss:null,arena:null,shake:0,zone:0,
   over:{},unlocks:[],showWin:false,winBonus:0,cfx:[],trailT:0,merged:new Set(),extraLoot:0,curse:null,events:[],nextEventH:220,goldRain:0,grT:0,sunT:1.5,auraT:0,boomT:1,laserN:0,laserT:0,fireT:.4,beetleT:1,kernT:0,fbT:1.5,gnT:2,shotN:0,jumpN:0,drT:[0,.3,.6],vampAcc:0,midasAcc:0,bonusHp:0,coinsSpent:0,shopRolls:0,pups:[],pu:{magnet:0,schild:0,doppelt:0,raserei:0},airJump:true,starT:0,schockT:0,pendingLoot:0,pendingBias:null,recBeaten:false,cause:'',synSeen:{},dmgDealt:0,maxHit:0,lootTaken:0};
+ if(dc){G.daily=dc.day;G.wseed=strHash('lj-world-'+dc.day);G.rowN=0}
  st=computeStats(G.items);G.p.maxHp=G.p.hp=calcMaxHp();
  addPlat(W/2-70,30,140,'normal');
  while(G.nextY>G.camY-220)genRow();
@@ -1221,7 +1313,7 @@ function pickType(h){
   ['timed',h>650?1.2+d*2:0],
  ]);
 }
-function genRow(){
+function genRowRaw(){
  const h=heightAt(G.nextY),d=clamp(h/3500,0,1);
  let gap=rand(58+d*55,100+d*80);
  if(G.zone===INFERNO_ZONE)gap*=.82; // Brennende Plattformen sind nur einmal nutzbar: etwas dichter
@@ -1396,7 +1488,7 @@ function hurt(dmg,cause){
   return;
  }
  if(p.shieldReady){p.shieldReady=false;p.shieldT=st.shieldCd;p.inv=.6;ring(p.x,p.y-16,34,'#8fe9ff',.4);text(p.x,p.y-46,tr('Geblockt'),'#8fe9ff',13,.7);SFX.block();return}
- G.hitTaken=true;G.hurtFx=.35;dmg*=st.dmgTaken;if(G.curse&&G.curse.type==='bruch')dmg*=1.25;if(st.wille&&p.hp<p.maxHp*.3)dmg*=.6;p.hp-=dmg;p.inv=1;shake(9);SFX.hurt();
+ G.hitTaken=true;G.hurtFx=.35;dmg*=st.dmgTaken;if(G.curse&&G.curse.type==='bruch')dmg*=1.25;if(st.wille&&p.hp<p.maxHp*.3)dmg*=.6;p.hp-=dmg;p.inv=1;shake(9);SFX.hurt();haptic('hit');
  if(st.dornen){const Rr=150;ring(p.x,p.y-16,Rr,C.coral,.35);for(let i=0;i<10;i++){const a=i/10*Math.PI*2;G.parts.push({x:p.x,y:p.y-16,vx:Math.cos(a)*420,vy:Math.sin(a)*420,life:.3,max:.3,col:'#ffb3a8',size:4})}
   for(const e of liveTargets())if(dist2(e.x,e.y,p.x,p.y-16)<(Rr+e.r)**2)onHit(e,st.dmg*(1.5+1.2*st.dornen),{noFire:true})}
  text(p.x,p.y-46,'-'+Math.round(dmg),C.coral,17,.8);burst(p.x,p.y-16,C.coral,10,200,4);
@@ -1549,7 +1641,7 @@ function beastSlam(b){const Rr=120;ring(b.x,b.y+20,Rr,C.fire,.45);burst(b.x,b.y+
 function eshot(x,y,a,s,dmg,r,col){G.eshots.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,dmg,r,col,life:5})}
 function bossDefeated(){
  const b=G.boss;if(!b||b.dead)return;b.dead=true;
- SFX.bossDie();shake(18);G.slowT=1.1;G.flash=.35;G.p.cheerT=1.1;
+ SFX.bossDie();haptic('boss');shake(18);G.slowT=1.1;G.flash=.35;G.p.cheerT=1.1;
  for(let i=0;i<5;i++)burst(b.x+rand(-30,30),b.y+rand(-30,30),i%2?C.gold:'#ffffff',18,320,6);
  ring(b.x,b.y,160,C.gold,.8);
  const n=Math.round(b.coin);for(let i=0;i<n;i++)addCoin(b.x+rand(-20,20),b.y+rand(-20,20),true);
@@ -2521,7 +2613,7 @@ const EVENTS={
  ader:{name:'Schatzader',col:'#ffcf4a'},
 };
 const CURSES={hast:{name:'Fluch der Hast',d:'Gegner sind 35% schneller'},bruch:{name:'Fluch der Zerbrechlichkeit',d:'Du erleidest 25% mehr Schaden'}};
-function pickEventType(h){return wpick([['altar',2],['gier',2],['haendler',1.5],['quelle',1.5],['schrein',1.5],['amboss',evoReady().length?4:1.6],['portal',h>300?1.6:0],['ader',h>200?1.3:0]])}
+function pickEventType(h){return wpick([['altar',2],['gier',2],['haendler',1.5],['quelle',1.5],['schrein',1.5],['amboss',G.daily?1.6:(evoReady().length?4:1.6)],['portal',h>300?1.6:0],['ader',h>200?1.3:0]])}
 function eventPos(ev){if(ev.pl&&ev.pl.alive&&!ev.pl.breaking){ev.x=ev.pl.x+ev.ox;ev.y=ev.pl.y}return ev}
 // Blutaltar: episches/legendäres NEUES Item aus ALLEN Items (auch gesperrte) – gilt nur für diesen Run.
 // Bei vollem Slot wird zufällig ein eigenes Item getauscht – vorher wird gefragt.
@@ -2721,6 +2813,7 @@ function syncRecord(best){if(best==null||best>=save.record)return;save.record=be
 async function syncRecordOnline(){try{syncRecord(await Board.fetchMine())}catch(e){}}
 async function submitRun(){
  if(G.test||!save.name)return;
+ if(G.daily){if(ONLINE||dailyLocal())submitDaily();return}
  const score=Math.floor(G.maxH),zone=G.zone+1;
  Board.addLocal(score,zone);
  if(!ONLINE){$('oBoard').textContent=tr('Lokale Bestenliste aktualisiert.');return}
@@ -2733,9 +2826,10 @@ async function submitRun(){
 /* ================= RUN END ================= */
 function die(cause){
  if(state!=='play')return;
- state='over';G.cause=cause;SFX.die();Music.set('none');setTimeout(()=>{if(state==='over')Music.set('menu')},2500);
+ state='over';G.cause=cause;SFX.die();haptic('die');Music.set('none');setTimeout(()=>{if(state==='over')Music.set('menu')},2500);
  burst(G.p.x,G.p.y-16,C.coral,30,260,5);
- const newRec=!G.test&&G.maxH>save.record;
+ const newRec=!G.test&&!G.daily&&G.maxH>save.record;
+ G.streak=!G.test&&G.daily?dailyStreakTick(G.daily):null;
  if(!G.test){save.totalCoins=(save.totalCoins||0)+G.coinsRun;checkCharUnlocks();save.coins+=G.coinsRun;save.kills+=G.kills;if(newRec)save.record=Math.floor(G.maxH);persist()}
  $('bossbar').hidden=true;
  setTimeout(()=>{
@@ -2743,7 +2837,9 @@ function die(cause){
   $('oRec').innerHTML=newRec?tr('<div class="newrec">Neuer Rekord!</div>'):'';
   $('oBoard').textContent=G.test?tr('Testmodus: kein Eintrag in die Bestenliste.'):'';submitRun();
   const ts=Math.round(G.t),rows=[[tr('Erreichte Höhe'),Math.floor(G.maxH)+' m'],[tr('Spielzeit'),Math.floor(ts/60)+':'+String(ts%60).padStart(2,'0')],[tr('Persönlicher Rekord'),save.record+' m'],[tr('Münzen verdient'),'+'+G.coinsRun],[tr('Beim Händler ausgegeben'),G.coinsSpent],[tr('Gegner besiegt'),G.kills],[tr('Bosse besiegt'),G.bossKills.length?G.bossKills.join(', '):tr('keine')],[tr('Höchster Treffer'),Math.round(G.maxHit)],[tr('Gesamtschaden'),Math.round(G.dmgDealt)]];
+  if(G.streak)rows.push([tr('Serie')+' '+G.streak.n+' '+(G.streak.n===1?tr('Tag'):tr('Tage')),'+'+G.streak.coins+(G.streak.hat?' + '+tr('Kalenderkrone'):'')]);
   $('oStats').innerHTML=rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
+  $('bAgain').textContent=G.daily?tr('Zur Tages-Challenge'):tr('Neuer Run');
   $('oInfo').hidden=true;$('oBuild').innerHTML=chipsHTML(G.items)+ovHudHTML();fillUnlocks($('oUnl'));
   setScreen('scrOver');$('bAgain').focus({preventScroll:true});
  },700);
@@ -2865,10 +2961,10 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
-Object.assign(EN_TXT,{'Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
+Object.assign(EN_TXT,{'Testmodus: ohne Server, nur auf diesem Gerät.':'Test mode: no server, this device only.','Test: Versuche zurücksetzen':'Test: reset tries','Tages-Challenge':'Daily Challenge','Alle spielen heute dieselbe Welt mit demselben Charakter und denselben 12 Items. Ohne Werkstatt-Upgrades. Neue Challenge um 00:00 Uhr (deutsche Zeit).':'Everyone plays the same world today with the same character and the same 12 items. No workshop upgrades. New challenge at midnight (German time).','Versuche übrig':'Tries left','Dein Bestwert':'Your best','Serie (Tage)':'Streak (days)','Versuch starten':'Start attempt','Heute':'Today','Top 10 des Vortags: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 Münzen.':'Yesterday\'s top 10: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 coins.','Serie: 20 / 30 / 40 / 50 / 60 / 70 Münzen, ab Tag 7 je 100 und die Kalenderkrone.':'Streak: 20 / 30 / 40 / 50 / 60 / 70 coins, from day 7 100 each and the Calendar Crown.','Die Tages-Challenge braucht eine Internetverbindung.':'The daily challenge needs an internet connection.','Lade …':'Loading …','Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.':'No tries left today. A new challenge starts tomorrow.','Server nicht erreichbar. Bitte später nochmal versuchen.':'Server unreachable. Please try again later.','Tages-Challenge wird eingetragen …':'Submitting daily score …','Tages-Challenge: Platz':'Daily challenge: place','Tages-Challenge gerade nicht erreichbar.':'Daily challenge currently unreachable.','Tages-Challenge gestern: Platz ':'Yesterday\'s daily: place ','Serie':'Streak','Tag':'day','Tage':'days','Kalenderkrone':'Calendar Crown','7 Tage Serie in der Tages-Challenge':'7-day streak in the daily challenge','Zur Tages-Challenge':'To daily challenge','Neuer Run':'New run','Vibration: ':'Vibration: ','Vibration: an':'Vibration: on','Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.12';
+const GAME_VER='0.9.13';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -2929,7 +3025,8 @@ const COSM={
   {id:'h_zmuetze',name:'Z-Mütze',price:500},
   {id:'h_wikinger',name:'Wikingerhelm',price:800},
   {id:'h_heilig',name:'Heiligenschein',price:1200},
-  {id:'h_krone',name:'Goldkrone',ach:'Besiege den Wächter',achOk:()=>!!(save.bossFirst&&save.bossFirst.warden)||(save.wins||0)>0}],
+  {id:'h_krone',name:'Goldkrone',ach:'Besiege den Wächter',achOk:()=>!!(save.bossFirst&&save.bossFirst.warden)||(save.wins||0)>0},
+  {id:'h_kalender',name:'Kalenderkrone',ach:'7 Tage Serie in der Tages-Challenge',achOk:()=>((save.dstreak&&save.dstreak.best)||0)>=7}],
  trail:[
   {id:'t_funken',name:'Funkenspur',price:400},
   {id:'t_blatt',name:'Blätterwirbel',price:500},
@@ -2965,6 +3062,7 @@ function drawHat(c,id,cid,f,sq,t){if(!id)return;const y=(HAT_Y[cid]||-33)*(1-sq*
    c.fillStyle='#a92c2e';c.fillRect(-11,-1,22,5);c.strokeRect(-11,-1,22,5);
    c.fillStyle='#f4f0e6';c.beginPath();c.arc(0,-15,3.6,0,7);c.fill();c.stroke();
    c.fillStyle='#f2c14e';c.beginPath();c.arc(f*2,-6,4.2,0,7);c.fill();c.stroke();c.fillStyle='#a92c2e';c.font='800 7px "Chakra Petch",sans-serif';c.textAlign='center';c.fillText('Z',f*2,-3.6);c.textAlign='left';break}
+  case'h_kalender':P([[-10,3],[-10,-7],[-5,-2],[0,-10],[5,-2],[10,-7],[10,3]],'#5fe0c8');c.fillStyle='#f4f0e6';c.fillRect(-5,-6,10,9);c.strokeRect(-5,-6,10,9);c.fillStyle='#ff6b5e';c.fillRect(-5,-6,10,3);c.fillStyle=ink;c.font='800 6px "Chakra Petch",sans-serif';c.textAlign='center';c.fillText('7',0,2.6);c.textAlign='left';break;
   case'h_krone':P([[-10,3],[-10,-8],[-5,-3],[0,-12],[5,-3],[10,-8],[10,3]],'#f2c14e');c.fillStyle='#ff6b5e';c.beginPath();c.arc(0,-2,2,0,7);c.fill();c.fillStyle='#9fd2ff';c.beginPath();c.arc(-6,0,1.6,0,7);c.arc(6,0,1.6,0,7);c.fill();break;
  }c.restore()}
 function cfx(o){if(G.cfx.length>160)G.cfx.shift();G.cfx.push(o)}
@@ -3029,7 +3127,7 @@ const WS=[
  {id:'rakete',icon:'pu_rakete',lv:['15 % höher','30 % höher','30 % höher'],sp:'Schockwelle beim Abheben'},
  {id:'glueck',icon:'klee',name:'Power-up-Glück',lv:['+20 % Power-ups','+40 % Power-ups','+60 % Power-ups']}];
 const WS_DUR={magnet:[10,13,16,20],schild:[6,7.5,9,9],doppelt:[15,19,23,23],raserei:[8,10,12,12]};
-function wsLvl(id){if(G&&G.test&&G.noWs)return 0;return Math.min(3,(save.ws&&save.ws[id])||0)}
+function wsLvl(id){if(G&&(G.daily||(G.test&&G.noWs)))return 0;return Math.min(3,(save.ws&&save.ws[id])||0)}
 function puDur(t){const d=WS_DUR[t];return d?d[wsLvl(t)]:PU[t].dur}
 function rocketBlast(){const p=G.p,R=170;ring(p.x,p.y-10,R,'#c4a6ff',.5);burst(p.x,p.y,'#c4a6ff',26,300,5);SFX.boom();shake(6);
  for(const e of liveTargets())if(dist2(e.x,e.y,p.x,p.y)<(R+e.r)**2)onHit(e,st.dmg*6,{noChain:true})}
@@ -3061,6 +3159,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.13',
+  neu:[['Tages-Challenge: gleiche Welt für alle, 3 Versuche, Belohnungen für Top 10 und Serien','Daily challenge: same world for everyone, 3 tries, rewards for top 10 and streaks'],['Vibration bei Schaden, Boss-Sieg und Tod (abschaltbar)','Vibration on damage, boss kill and death (can be turned off)']],
+  fix:[]},
  {v:'0.9.12',
   neu:[['Lebensbrunnen heilt 35 %, Doppelsprung mit Abklingzeit (Akrobat 6 Sek., sonst 10 Sek.)','Healing spring heals 35 %, double jump has a cooldown (Acrobat 6 s, otherwise 10 s)']],
   fix:[]},
@@ -3198,12 +3299,12 @@ $('bLegalBack').onclick=()=>setScreen('scrSet');
 document.querySelectorAll('[data-legal]').forEach(b=>b.onclick=()=>openLegal(b.dataset.legal));
 
 /* ================= MENUS ================= */
-const screens=['scrLegal','scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
+const screens=['scrDaily','scrLegal','scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
 function setScreen(id){for(const s of screens)$(s).hidden=s!==id}
 function toMenu(){Music.set('menu');Music.setDuck(false);state='menu';G=null;$('hud').hidden=true;$('bossbar').hidden=true;refreshMenu();setScreen('scrMenu')}
 function syncSettings(){for(const [id,key] of VOLS){if(document.activeElement!==$(id))$(id).value=save[key];$(id+'V').textContent=save[key]+'%'}
  const lt=LANG==='en'?'Language: English':'Sprache: Deutsch';$('bLang').textContent=lt;$('pLang').textContent=lt;$('bLangMenu').textContent=LANG==='en'?'DE':'EN';
- const a=tr('Ton: ')+(save.sound?tr('an'):tr('aus')),b=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'));$('bSound').textContent=a;$('pSound').textContent=a;$('bShake').textContent=b;$('pShake').textContent=b}
+ const a=tr('Ton: ')+(save.sound?tr('an'):tr('aus')),b=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'));$('bSound').textContent=a;$('pSound').textContent=a;$('bShake').textContent=b;$('pShake').textContent=b;$('bVib').textContent=tr('Vibration: ')+(save.vib===false?tr('aus'):tr('an'))}
 function refreshMenu(){syncSettings();syncTipBtn();$('mRec').textContent=save.record+' m';$('mCoins').textContent=save.coins;$('mUnl').textContent=save.unlocked.length+'/'+ITEMS.length;$('bSound').textContent=tr('Ton: ')+(save.sound?tr('an'):tr('aus'));$('bShake').textContent=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'))}
 function buildChests(){
  $('cCoins').textContent=save.coins;
@@ -3309,7 +3410,9 @@ $('bReset').onclick=()=>{if(!resetArm){resetArm=true;$('bReset').innerHTML=tr('<
 $('bSkip').onclick=skipLoot;
 $('bResume').onclick=()=>resume();
 $('bQuit').onclick=quitRun;
-$('bAgain').onclick=()=>{audioOn();newRun()};
+$('bAgain').onclick=()=>{audioOn();if(G&&G.daily){toMenu();openDaily()}else newRun()};
+$('bDaily').onclick=()=>{audioOn();openDaily()};$('bDailyGo').onclick=startDaily;$('bDailyReset').onclick=()=>{save.dmock=null;persist();openDaily()};
+$('bVib').onclick=()=>{save.vib=save.vib===false;persist();syncSettings();if(save.vib!==false)haptic('boss')};
 $('bMenu').onclick=toMenu;
 function pause(){if(state!=='play')return;state='pause';$('pInfo').hidden=true;buildDev();Music.setDuck(true);keys.left=keys.right=false;$('pBuild').innerHTML=(chipsHTML(G.items)+ovHudHTML())||tr('<p class="hint">Noch keine Items in diesem Run.</p>');setScreen('scrPause')}
 function resume(){if(state!=='pause')return;Music.setDuck(false);setScreen(null);state='play';last=performance.now()}
@@ -3384,7 +3487,7 @@ applyLang(save.lang||'de');
 if(ONLINE)syncRecordOnline();
 if(CFG.devMode===false)$('devBox').hidden=true; // Veröffentlichte Version: kein Testmodus
 refreshMenu();setScreen('scrMenu');
-maybeShowNews();
+maybeShowNews();setTimeout(dailyClaim,1500);
 requestAnimationFrame(frame);
 if(CFG.devMode!==false)window.__LJ={fig:(...a)=>drawFigure(...a),hat:(...a)=>drawHat(...a),get G(){return G},get state(){return state},get save(){return save},newRun,openLoot,chooseLoot,startBoss:()=>startBoss(),openBossReel:()=>openBossReel(),eligible:()=>eligible(),giveItem:id=>giveItem(IT[id]),evoReady:()=>evoReady().map(e=>e.id),iconIds:()=>Object.keys(ICON_DRAW),iconURL:id=>iconURL(id),doEvolve:id=>doEvolve(EVOS.find(e=>e.id===id)),trig:t=>triggerEvent({type:t,x:G.p.x,y:G.p.y,used:false}),openShop:()=>openShop(),activatePU:t=>activatePU(t),spawn:(t,x,y)=>makeEnemy(t,x,y,G.maxH)};
 })();

@@ -723,7 +723,7 @@ const EN_DATA={
   giftnebel:['Poison Mist','Every 3 s you release a poison cloud that poisons nearby enemies several times.'],ueberladung:['Overload','Every 5th shot triggers chain lightning (level 2: every 4th, level 3: every 3rd).'],
   frost:['Frost Core','+20% chance to freeze enemies: they slow down and take +25% damage.'],dornen:['Thorn Armor','When you get hit, thorns shoot in all directions and hurt nearby enemies.'],
   drohne:['Combat Drone','A drone follows you and shoots on its own. Each level: one more drone.'],echo:['Echo Blade','Critical hits have a 35% chance (level 2: 60%) to instantly hit a second target.'],
-  meteor:['Meteor Boots','Every 4th jump (level 2: every 3rd) ends in a meteor impact with large area damage.'],doppelsprung:['Cloud Boots','Double jump: press W, ↑ or Space in mid-air for a second jump.'],
+  meteor:['Meteor Boots','Every 4th jump (level 2: every 3rd) ends in a meteor impact with large area damage.'],doppelsprung:['Cloud Boots','Double jump: press W, ↑ or Space in mid-air for a second jump. Cooldown 10 s.'],
   inferno:['Inferno Heart','Burning enemies explode on death and set everything nearby on fire.'],midas:['Midas Crown','Double coins. Every 25th coin collected unleashes a gold rain of 8 projectiles.'],
   fernglas:['Spyglass','+20% range and +15% projectile speed.'],quell:['Life Spring','Regenerates 0.5 HP per second.'],gier:['Gold Greed','+1% damage per 10 coins you carry this run (max. +30% per level).'],
   vampir:['Vampire Fang','2% of the damage you deal heals you.'],zorn:['Berserker Rage','Up to +30% damage the lower your HP.'],henker:["Executioner's Axe",'+35% critical damage.'],
@@ -756,7 +756,7 @@ const EN_DATA={
   pyro:['Pyromaniac','Flamethrower','Short range, but a constant stream that sets enemies on fire.','Burning platforms last twice as long for him.','Defeat the Inferno Beast.'],
   sammler:['Collector','Junk Toss','Throws random junk from his backpack. Damage varies with each find.','Starts with 3+3 slots and grows to 5+5. Cannot evolve items.','Fill all 8 slots in one run (4 abilities + 4 stats).'],
   gluck:['Fortune Knight','Coin Toss','Throws coins. Damage grows with the coins you carry this run.','25% discount at the merchant.','Collect 3,000 coins in total.'],
-  akrobat:['Acrobat','Jump Volleys','No weapon: every jump fires a ring of projectiles.','Double jump from the start, jumps higher.','Reach 2,000 m in under 3 minutes.'],
+  akrobat:['Acrobat','Jump Volleys','No weapon: every jump fires a ring of projectiles.','Double jump from the start (6 s cooldown), jumps higher.','Reach 2,000 m in under 3 minutes.'],
   waechter:['Warden Shard','Prism Laser','A continuous beam that burns the nearest enemy.','The legacy of the final boss.','Defeat the Warden.']},
  events:{altar:'Blood Altar',gier:'Chest of Greed',haendler:'Wandering Merchant',quelle:'Healing Spring',schrein:'Cursed Shrine',amboss:'Anvil',portal:'Elite Portal',ader:'Treasure Vein'},
  curses:{hast:['Curse of Haste','Enemies are 35% faster'],bruch:['Curse of Fragility','You take 25% more damage']},
@@ -795,7 +795,7 @@ function translateStatic(root){
 function applyLang(lang){
  if(lang)LANG=lang;document.documentElement.lang=LANG;
  applyLangData();translateStatic(document.getElementById('stage'));
- if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.');
+ if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.')+tr(' Abklingzeit 10 Sek.');
  if(typeof hudCache!=='undefined')hudCache={};
 }
 
@@ -863,7 +863,7 @@ const ITEMS=[
  {id:'drohne',name:'Kampfdrohne',ab:'KD',r:2,max:3,cat:'Waffe',d:'Eine Drohne begleitet dich und schießt selbstständig. Jede Stufe: eine weitere Drohne.'},
  {id:'echo',name:'Echoklinge',ab:'EK',r:2,max:2,cat:'Krit',d:'Kritische Treffer haben 35% Chance (Stufe 2: 60%), sofort ein zweites Ziel zu treffen.'},
  {id:'meteor',name:'Meteorstiefel',ab:'MS',r:2,max:2,cat:'Sprung',d:'Jeder 4. Sprung (Stufe 2: jeder 3.) endet in einem Meteoreinschlag mit großem Flächenschaden.'},
- {id:'doppelsprung',name:'Wolkenstiefel',ab:'WS',r:2,max:1,cat:'Bewegung',d:'Doppelsprung: Drücke in der Luft W, ↑ oder Leertaste für einen zweiten Sprung.'},
+ {id:'doppelsprung',name:'Wolkenstiefel',ab:'WS',r:2,max:1,cat:'Bewegung',d:'Doppelsprung: Drücke in der Luft W, ↑ oder Leertaste für einen zweiten Sprung. Abklingzeit 10 Sek.'},
  {id:'inferno',name:'Infernoherz',ab:'IH',r:3,max:1,cat:'Feuer',d:'Brennende Gegner explodieren beim Tod und setzen alles in der Nähe in Brand.'},
  {id:'midas',name:'Midaskrone',ab:'MK',r:3,max:1,cat:'Wirtschaft',d:'Doppelte Münzen. Jede 25. eingesammelte Münze entlädt einen Goldregen aus 8 Projektilen.'},
  {id:'fernglas',name:'Fernglas',ab:'FG',r:0,max:3,cat:'Offensiv',d:'+20% Reichweite und +15% Projektilgeschwindigkeit.'},
@@ -1324,7 +1324,8 @@ function fireballBoom(x,y,dmg){const Rr=75;ring(x,y,Rr,C.fire,.4);burst(x,y,C.fi
  for(const e of liveTargets())if(dist2(e.x,e.y,x,y)<(Rr+e.r)**2){onHit(e,dmg,{noFire:true});e.burn.t=3;e.burn.dps=Math.max(e.burn.dps,5+2*st.glut)}}
 function droneN(){return st.drohne+(st.traeger?2:0)}
 function dronePos(i){const p=G.p,n=Math.max(1,droneN()),a=-G.t*1.6+i/n*Math.PI*2;return{x:p.x+Math.cos(a)*46,y:p.y-48+Math.sin(a)*14}}
-function airJump(){const p=G.p;if(state!=='play'||!st.doppelsprung||!p.airJump)return;p.airJump=false;p.vy=-st.jumpV*.92;ring(p.x,p.y,36,'#dfe6ff',.3);burst(p.x,p.y,'#dfe6ff',8,140,3);SFX.air();akrobatRing()}
+function djCdMax(){return CHR().id==='akrobat'?6:10}
+function airJump(){const p=G.p;if(state!=='play'||!st.doppelsprung||!p.airJump||(G.djCd||0)>0)return;p.airJump=false;G.djCd=djCdMax();p.vy=-st.jumpV*.92;ring(p.x,p.y,36,'#dfe6ff',.3);burst(p.x,p.y,'#dfe6ff',8,140,3);SFX.air();akrobatRing()}
 function calcMaxHp(){const n=id=>G.items[id]||0;return Math.round((CHR().hp+15*((G.over&&G.over.o_hp)||0)+25*n('herz')+50*n('titan')+100*n('titanenherz')+(n('goetter')?25:0)+G.bonusHp)*(n('glas')?.6:1))}
 function liveMul(){const p=G.p;let m=1;if(st.zorn)m*=1+.3*st.zorn*clamp(1-p.hp/p.maxHp,0,1);if(st.gier)m*=1+Math.min(.3*st.gier,.01*st.gier*G.coinsRun/10);return m}
 
@@ -1625,6 +1626,7 @@ function update(dt){
  if(p.hp<p.maxHp*.25&&p.hp>0){heartT-=dt;if(heartT<=0){heartT=.9;SFX.heart()}}
  if(G.adrenT>0){G.adrenT-=dt;if(G.adrenT<=0)G.adren=0}
  for(const k in G.pu)if(G.pu[k]>0)G.pu[k]=Math.max(0,G.pu[k]-dt);
+ if(G.djCd>0){G.djCd=Math.max(0,G.djCd-dt);if(G.djCd===0&&st.doppelsprung){ring(G.p.x,G.p.y-16,30,'#dfe6ff',.3)}}
  // camera
  if(G.arena){G.camY=lerp(G.camY,G.arena.lockY,Math.min(1,dt*3))}
  else{const target=p.y-H*.42;if(target<G.camY)G.camY=lerp(G.camY,target,Math.min(1,dt*12))}
@@ -1781,7 +1783,7 @@ const CHARS=[
  {id:'gluck',name:'Glücksritter',weapon:'Münzwurf',hp:100,spd:1,jump:1,dmg:.75,rate:1,favor:['magnet','pfennig','midas','gier'],
   wd:'Wirft Münzen. Der Schaden steigt mit deinen Münzen im Run.',pd:'25% Rabatt beim Händler.',task:'Sammle insgesamt 3.000 Münzen.'},
  {id:'akrobat',name:'Akrobat',weapon:'Sprungsalven',hp:90,spd:1.1,jump:1.1,dmg:.9,rate:0,
-  wd:'Keine Waffe: Jeder Absprung feuert einen Projektilring.',pd:'Doppelsprung von Anfang an, springt höher.',task:'Erreiche 2.000 m in unter 3 Minuten.'},
+  wd:'Keine Waffe: Jeder Absprung feuert einen Projektilring.',pd:'Doppelsprung von Anfang an (Abklingzeit 6 Sek.), springt höher.',task:'Erreiche 2.000 m in unter 3 Minuten.'},
  {id:'waechter',name:'Wächter-Fragment',weapon:'Prismalaser',hp:110,spd:1,jump:1,dmg:1,rate:1,secret:true,
   wd:'Ein Dauerstrahl, der den nächsten Gegner verbrennt.',pd:'Das Erbe des Endbosses.',task:'Besiege den Wächter.'},
  {id:'sammler',name:'Sammler',weapon:'Kramwurf',hp:100,spd:1,jump:1,dmg:1,rate:1.05,
@@ -2377,7 +2379,7 @@ function updateHUD(){
  setT('hH',Math.floor(G.maxH));setT('hR',Math.floor(Math.max(save.record,G.maxH)));setT('hC',G.coinsRun);
  const hpw=Math.round(clamp(p.hp/p.maxHp,0,1)*100);if(hudCache.hpw!==hpw){hudCache.hpw=hpw;$('hHp').style.width=hpw+'%'}
  setT('hHpT',Math.ceil(p.hp)+'/'+p.maxHp);
- const pk=Object.entries(G.pu).filter(([,v])=>v>0).map(([k,v])=>k+Math.ceil(v)).join('|')+(G.curse?'c'+G.curse.type:'');if(hudCache.pu!==pk){hudCache.pu=pk;$('hPu').innerHTML=Object.entries(G.pu).filter(([,v])=>v>0).map(([k,v])=>`<span class="pu" style="--pc:${PU[k].col}">${iconImg('pu_'+k)}${PU[k].name} ${Math.ceil(v)}s</span>`).join('')+(G.curse?`<span class="pu" style="--pc:#a77bff">${CURSES[G.curse.type].name}</span>`:'')}
+ const djs=st.doppelsprung&&G.djCd>0?Math.ceil(G.djCd):0;const pk=Object.entries(G.pu).filter(([,v])=>v>0).map(([k,v])=>k+Math.ceil(v)).join('|')+(G.curse?'c'+G.curse.type:'')+'d'+djs;if(hudCache.pu!==pk){hudCache.pu=pk;$('hPu').innerHTML=Object.entries(G.pu).filter(([,v])=>v>0).map(([k,v])=>`<span class="pu" style="--pc:${PU[k].col}">${iconImg('pu_'+k)}${PU[k].name} ${Math.ceil(v)}s</span>`).join('')+(G.curse?`<span class="pu" style="--pc:#a77bff">${CURSES[G.curse.type].name}</span>`:'')+(djs?`<span class="pu" style="--pc:#dfe6ff">${iconImg('doppelsprung')}${tr('Doppelsprung')} ${djs}s</span>`:'')}
  const sh=!!p.shieldReady;if(hudCache.sh!==sh){hudCache.sh=sh;$('hSh').hidden=!sh}
  const ik=JSON.stringify(G.items)+slotCap('f')+JSON.stringify(G.over||{});if(hudCache.items!==ik){hudCache.items=ik;$('hItems').innerHTML=slotChipsHTML(G.items)+ovHudHTML()}
  const sk=SYN.filter(s=>st.syn[s.id]).map(s=>s.name).join('|');if(hudCache.syn!==sk){hudCache.syn=sk;$('hSyn').innerHTML=SYN.filter(s=>st.syn[s.id]).map(s=>`<span class="syn" title="${s.d}">${s.name}</span>`).join('')}
@@ -2566,7 +2568,7 @@ function triggerEvent(ev){
    {label:tr('Weitergehen'),sub:tr('Lieber nicht')}]);break}
   case'haendler':$('shopTag').textContent=tr('Mitten im Aufstieg');$('shopTitle').textContent=tr('Wandernder Händler');openShop();break;
   case'quelle':showEvent(ev,tr('Klares Wasser sprudelt aus dem Fels. Du darfst einmal trinken.'),[
-   {label:tr('Volle Lebenspunkte'),sub:`${tr('Heilt auf')} ${p.maxHp} ${tr(' LP').trim()}`,col:'#6fd3ff',disabled:p.hp>=p.maxHp,fn:()=>{p.hp=p.maxHp;ring(p.x,p.y-16,50,'#6fd3ff',.4);SFX.buy()}},
+   {label:tr('Heilen: 35% LP'),sub:`+${Math.round(p.maxHp*.35)} ${tr(' LP').trim()}`,col:'#6fd3ff',disabled:p.hp>=p.maxHp,fn:()=>{p.hp=Math.min(p.maxHp,p.hp+p.maxHp*.35);ring(p.x,p.y-16,50,'#6fd3ff',.4);SFX.buy()}},
    {label:tr('+15 max. Lebenspunkte'),sub:tr('Dauerhaft für diesen Run'),col:'#6fd3ff',fn:()=>{G.bonusHp+=15;const o=p.maxHp;p.maxHp=calcMaxHp();p.hp+=p.maxHp-o;SFX.buy()}}]);break;
   case'schrein':{const ck=Math.random()<.5?'hast':'bruch',c=CURSES[ck];showEvent(ev,tr('Violettes Licht pulsiert. Ein Pakt wird angeboten: Macht gegen einen Fluch bis zum nächsten Boss.'),[
    {label:tr('Pakt annehmen: 2 Items'),sub:c.name+': '+c.d,col:C.violet,disabled:!!G.curse,fn:()=>{G.curse={type:ck};toast(c.name+tr(' bis zum nächsten Boss'));G.extraLoot=1;setScreen(null);state='play';openLoot(null);return'keep'}},
@@ -2863,10 +2865,10 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
-Object.assign(EN_TXT,{'Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
+Object.assign(EN_TXT,{'Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.11';
+const GAME_VER='0.9.12';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -3059,6 +3061,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.12',
+  neu:[['Lebensbrunnen heilt 35 %, Doppelsprung mit Abklingzeit (Akrobat 6 Sek., sonst 10 Sek.)','Healing spring heals 35 %, double jump has a cooldown (Acrobat 6 s, otherwise 10 s)']],
+  fix:[]},
  {v:'0.9.11',
   neu:[['Lebensleiste im Händler','Health bar in the shop']],
   fix:[]},

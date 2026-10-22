@@ -183,6 +183,12 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 .evorow{display:grid;grid-template-columns:1fr auto;gap:.1em .6em;background:var(--panel);border-radius:.4em;padding:.4em .6em;box-shadow:inset 3px 0 0 #ff7ad9}
 .evorow b{color:#ffb3ea}.evorow small{grid-column:1/-1;color:var(--muted)}
 /* Touch pause button */
+.djbtn{pointer-events:auto;position:absolute;right:1em;bottom:calc(1.1em + env(safe-area-inset-bottom,0px));width:4.4em;height:4.4em;border-radius:50%;border:3px solid var(--ink);padding:0;
+ background:conic-gradient(rgba(223,230,255,.85) calc(var(--cd,1)*360deg),rgba(22,28,39,.7) 0);display:grid;place-items:center;touch-action:none;-webkit-tap-highlight-color:transparent;box-shadow:0 3px 0 var(--ink);opacity:.85}
+.djbtn span{width:72%;height:72%;border-radius:50%;background:rgba(22,28,39,.9) center/70% no-repeat;display:block;box-shadow:inset 0 0 0 1px var(--line)}
+.djbtn.ready{opacity:1;box-shadow:0 3px 0 var(--ink),0 0 14px rgba(223,230,255,.55)}
+.djbtn.ready span{background-color:rgba(60,72,98,.95)}
+.djbtn:active span{transform:scale(.92)}
 .pausebtn{pointer-events:auto;position:absolute;left:50%;top:.7em;transform:translateX(-50%);width:2.3em;height:2.3em;border-radius:50%;border:2px solid var(--ink);background:rgba(22,28,39,.75);color:var(--text);font-family:var(--display);font-size:.85em;letter-spacing:-.1em;display:grid;place-items:center}
 .pausebtn:active{background:var(--panel2)}
 /* Character select */
@@ -347,6 +353,7 @@ html.touch .card kbd{display:none}
       <div class="syns" id="hSyn"></div>
       <div class="items" id="hItems"></div>
     </div>
+    <button class="djbtn" id="bDj" aria-label="Doppelsprung" hidden><span id="bDjIc"></span></button>
   </div>
   <div id="bossbar" hidden><div class="bn" id="bN">Steingolem</div><div class="bb"><i id="bHp"></i></div></div>
   <div id="banner"><div class="z1" id="bz1">Zone</div><div class="z2" id="bz2">Felsige Tiefen</div></div>
@@ -398,7 +405,7 @@ html.touch .card kbd{display:none}
       <button class="btn" id="bSet">Einstellungen</button>
     </div>
     <div class="hint k-only"><kbd>A</kbd> <kbd>D</kbd> oder <kbd>←</kbd> <kbd>→</kbd> bewegen · Springen und Schießen passieren automatisch<br><kbd>W</kbd> / <kbd>↑</kbd> Doppelsprung (mit Wolkenstiefel)<br><kbd>P</kbd> Pause · <kbd>M</kbd> Ton</div>
-    <div class="hint t-only">Linke oder rechte Hälfte halten = lenken<br>Springen und Schießen passieren automatisch<br>Doppelt tippen = Doppelsprung (mit Wolkenstiefel) · <b>II</b> = Pause</div>
+    <div class="hint t-only">Linke oder rechte Hälfte halten = lenken<br>Springen und Schießen passieren automatisch<br>Knopf unten rechts = Doppelsprung (mit Wolkenstiefel) · <b>II</b> = Pause</div>
   </div>
 
 
@@ -830,7 +837,7 @@ function translateStatic(root){
 function applyLang(lang){
  if(lang)LANG=lang;document.documentElement.lang=LANG;
  applyLangData();translateStatic(document.getElementById('stage'));
- if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.')+tr(' Abklingzeit 10 Sek.');
+ if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Tippe in der Luft auf den Sprung-Knopf unten rechts.')+tr(' Abklingzeit 10 Sek.');
  if(typeof hudCache!=='undefined')hudCache={};
 }
 
@@ -1865,7 +1872,10 @@ function update(dt){
   const onPl=c.pl&&c.pl.alive&&!c.pl.breaking?((p.lastLand===c.pl&&Math.abs(p.x-c.x)<c.pl.w/2+16&&p.y-c.y<40)||(Math.abs(p.x-c.x)<26&&p.y<=c.y+1&&p.y>=c.y-46)):dist2(c.x,c.y-12,p.x,p.y-16)<30*30; // Truhen auf Plattformen: öffnen, sobald die Füße die Plattformhöhe erreicht haben (Landen nicht nötig, Durchspringen geht)
   if(onPl){c.got=true;burst(c.x,c.y-12,C.violet,20,220,5);openLoot(c.boss?'boss':null);break}}
  G.chests=G.chests.filter(c=>!c.got&&c.y<G.camY+H+80);
- for(const ev of G.events){eventPos(ev);if(!ev.used&&(!ev.pl||!ev.pl.chain||ev.pl.vis>.5)&&dist2(ev.x,ev.y-22,p.x,p.y-16)<36*36){triggerEvent(ev);break}}
+ for(const ev of G.events){eventPos(ev);if(ev.used||(ev.pl&&ev.pl.chain&&ev.pl.vis<=.5))continue;
+  // wie bei Truhen: erst auslösen, wenn die Füße die Plattformhöhe erreicht haben (Landen nicht nötig)
+  const ok=ev.pl&&ev.pl.alive&&!ev.pl.breaking?(Math.abs(p.x-ev.x)<30&&p.y<=ev.y+1&&p.y>=ev.y-46):dist2(ev.x,ev.y-22,p.x,p.y-16)<36*36;
+  if(ok){triggerEvent(ev);break}}
  G.events=G.events.filter(ev=>ev.y<G.camY+H+100);
  if(G.goldRain>0){G.goldRain-=dt;G.grT-=dt;if(G.grT<=0){G.grT=.1;const c={x:rand(30,W-30),y:G.camY+10,vx:0,vy:rand(40,140),phys:true,t:0,fly:false};G.coins.push(c)}}
  if(state!=='play')return;
@@ -2511,6 +2521,7 @@ function updateHUD(){
  setT('hHpT',Math.ceil(p.hp)+'/'+p.maxHp);
  const djs=st.doppelsprung&&G.djCd>0?Math.ceil(G.djCd):0;const pk=Object.entries(G.pu).filter(([,v])=>v>0).map(([k,v])=>k+Math.ceil(v)).join('|')+(G.curse?'c'+G.curse.type:'')+'d'+djs;if(hudCache.pu!==pk){hudCache.pu=pk;$('hPu').innerHTML=Object.entries(G.pu).filter(([,v])=>v>0).map(([k,v])=>`<span class="pu" style="--pc:${PU[k].col}">${iconImg('pu_'+k)}${PU[k].name} ${Math.ceil(v)}s</span>`).join('')+(G.curse?`<span class="pu" style="--pc:#a77bff">${CURSES[G.curse.type].name}</span>`:'')+(djs?`<span class="pu" style="--pc:#dfe6ff">${iconImg('doppelsprung')}${tr('Doppelsprung')} ${djs}s</span>`:'')}
  const sh=!!p.shieldReady;if(hudCache.sh!==sh){hudCache.sh=sh;$('hSh').hidden=!sh}
+ {const show=IS_TOUCH&&!!st.doppelsprung,b=$('bDj');if(b.hidden===show)b.hidden=!show;if(show){const f=G.djCd>0?1-G.djCd/djCdMax():1;b.style.setProperty('--cd',f.toFixed(3));b.classList.toggle('ready',f>=1&&G.p.airJump!==false)}}
  const ik=JSON.stringify(G.items)+slotCap('f')+JSON.stringify(G.over||{});if(hudCache.items!==ik){hudCache.items=ik;$('hItems').innerHTML=slotChipsHTML(G.items)+ovHudHTML()}
  const sk=SYN.filter(s=>st.syn[s.id]).map(s=>s.name).join('|');if(hudCache.syn!==sk){hudCache.syn=sk;$('hSyn').innerHTML=SYN.filter(s=>st.syn[s.id]).map(s=>`<span class="syn" title="${s.d}">${s.name}</span>`).join('')}
  if(G.boss){const bw=Math.round(clamp(G.boss.hp/G.boss.maxHp,0,1)*1000)/10;if(hudCache.bw!==bw){hudCache.bw=bw;$('bHp').style.width=bw+'%'}}
@@ -2950,7 +2961,7 @@ Object.assign(EN_TXT,{
  'Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.':'Jumping and shooting happen automatically. If you fall off the bottom of the screen, the run is over.',
  'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.':'Your weapon aims on its own. Touching enemies or getting shot costs health.',
  'Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.':'Touch it to open it, then pick one of three upgrades.',
- 'Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.':'In mid-air, double-tap the same side or tap with a second finger.',
+ 'Tippe in der Luft auf den Sprung-Knopf unten rechts.':'In mid-air, tap the jump button at the bottom right.',
  'Drücke in der Luft W, ↑ oder Leertaste.':'Press W, ↑ or Space in mid-air.',
  'Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.':'Dodge the attacks, your weapons hit automatically. A merchant awaits afterwards.',
  'Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.':'A poison flood rises from below. Keep moving and climb fast.',
@@ -2962,9 +2973,9 @@ Object.assign(EN_TXT,{
  'Tippen zum Überspringen':'Tap to skip',
  'Linke oder rechte Hälfte halten = lenken':'Hold left or right half = steer',
  'Springen und Schießen passieren automatisch':'Jumping and shooting happen automatically',
- 'Doppelt tippen = Doppelsprung (mit Wolkenstiefel) ·':'Double-tap = double jump (with Cloud Boots) ·',
+ 'Knopf unten rechts = Doppelsprung (mit Wolkenstiefel) ·':'Button bottom right = double jump (with Cloud Boots) ·',
  'Doppelsprung (mit Wolkenstiefel)':'double jump (with Cloud Boots)','Pause ·':'pause ·','Wähle eine Verbesserung':'Choose an upgrade',
- 'Doppelsprung: Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.':'Double jump: in mid-air, double-tap the same side or tap with a second finger.'
+ 'Doppelsprung: Tippe in der Luft auf den Sprung-Knopf unten rechts.':'Double jump: in mid-air, tap the jump button at the bottom right.'
 });
 Object.assign(EN_TXT,{'Der Wächter ist besiegt':'The Warden is defeated','Gipfel bezwungen!':'Summit conquered!',
  'Du hast alle sechs Zonen geschafft. Ab jetzt beginnt der Endlos-Aufstieg: Alle Zonen kommen wieder, und die Bosse werden mit jedem Zyklus stärker.':'You cleared all six zones. Now the endless climb begins: every zone returns, and the bosses grow stronger with each cycle.',
@@ -3002,12 +3013,12 @@ Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz
 Object.assign(EN_TXT,{'Synergie weg: ':'Synergy lost: ',' · Tippen = verkaufen':' · tap = sell','STURMFEUER!':'STORM FIRE!','Sturmfeuer':'Storm Fire','Tages-Challenge · gestern':'Daily challenge · yesterday','Platz':'Place','Deine Höhe: ':'Your height: ','Belohnung bereits erhalten.':'Reward already received.','Keine Belohnung – nur die Top 10 bekommen Münzen. Morgen wieder!':'No reward – only the top 10 get coins. Try again tomorrow!','Super!':'Great!','Okay':'Okay','Testmodus: ohne Server, nur auf diesem Gerät.':'Test mode: no server, this device only.','Test: Versuche zurücksetzen':'Test: reset tries','Tages-Challenge':'Daily Challenge','Alle spielen heute dieselbe Welt mit demselben Charakter und denselben 12 Items. Ohne Werkstatt-Upgrades. Neue Challenge um 00:00 Uhr (deutsche Zeit).':'Everyone plays the same world today with the same character and the same 12 items. No workshop upgrades. New challenge at midnight (German time).','Versuche übrig':'Tries left','Dein Bestwert':'Your best','Serie (Tage)':'Streak (days)','Versuch starten':'Start attempt','Heute · Top 10':'Today · Top 10','Top 10 des Vortags: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 Münzen.':'Yesterday\'s top 10: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 coins.','Serie: 20 / 30 / 40 / 50 / 60 / 70 Münzen, ab Tag 7 je 100 und die Kalenderkrone.':'Streak: 20 / 30 / 40 / 50 / 60 / 70 coins, from day 7 100 each and the Calendar Crown.','Die Tages-Challenge braucht eine Internetverbindung.':'The daily challenge needs an internet connection.','Lade …':'Loading …','Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.':'No tries left today. A new challenge starts tomorrow.','Server nicht erreichbar. Bitte später nochmal versuchen.':'Server unreachable. Please try again later.','Tages-Challenge wird eingetragen …':'Submitting daily score …','Tages-Challenge: Platz':'Daily challenge: place','Tages-Challenge gerade nicht erreichbar.':'Daily challenge currently unreachable.','Tages-Challenge gestern: Platz ':'Yesterday\'s daily: place ','Serie':'Streak','Tag':'day','Tage':'days','Kalenderkrone':'Calendar Crown','7 Tage Serie in der Tages-Challenge':'7-day streak in the daily challenge','Zur Tages-Challenge':'To daily challenge','Neuer Run':'New run','Vibration: ':'Vibration: ','Vibration: an':'Vibration: on','Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.14';
+const GAME_VER='0.9.15';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
  chest:{title:'Truhe',tx:()=>'Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.'},
- dj:{title:'Doppelsprung',tx:()=>IS_TOUCH?'Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.':'Drücke in der Luft W, ↑ oder Leertaste.'},
+ dj:{title:'Doppelsprung',tx:()=>IS_TOUCH?'Tippe in der Luft auf den Sprung-Knopf unten rechts.':'Drücke in der Luft W, ↑ oder Leertaste.'},
  boss:{title:'Bosskampf',tx:()=>'Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.'},
  zone1:{title:'Vergessene Ruinen',tx:()=>'Achtung, Pfeilfallen: Wo eine Rune an der Wand aufleuchtet, fliegt gleich ein Pfeil quer durchs Bild. Leuchtende Runen-Plattformen lassen dich höher springen.'},
  zone2:{title:'Giftsumpf',tx:()=>'Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.'},
@@ -3197,8 +3208,11 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.15',
+  neu:[['Handy: eigener Knopf für den Doppelsprung (unten rechts)','Phone: dedicated double jump button (bottom right)']],
+  fix:[['Events lösen erst aus, wenn man die Höhe ihrer Plattform erreicht','Events only trigger once you reach the height of their platform']]},
  {v:'0.9.14',
-  neu:[['Sturmfeuer ersetzt Raserei: 8 Sek. lang Schüsse im Fächer','Storm Fire replaces Frenzy: 8 s of fan shots'],['Handy: Doppelsprung durch zweimal schnell tippen','Phone: double jump by double-tapping'],['Abklingzeit des Doppelsprungs und Adrenalin an der Figur sichtbar','Double jump cooldown and adrenaline shown on the character'],['Tages-Challenge: Fenster mit Platz und Belohnung vom Vortag','Daily challenge: window with yesterday\'s place and reward'],['Verkaufen warnt, wenn eine Synergie verloren geht','Selling warns when a synergy will be lost']],
+  neu:[['Sturmfeuer ersetzt Raserei: 8 Sek. lang Schüsse im Fächer','Storm Fire replaces Frenzy: 8 s of fan shots'],['Abklingzeit des Doppelsprungs und Adrenalin an der Figur sichtbar','Double jump cooldown and adrenaline shown on the character'],['Tages-Challenge: Fenster mit Platz und Belohnung vom Vortag','Daily challenge: window with yesterday\'s place and reward'],['Verkaufen warnt, wenn eine Synergie verloren geht','Selling warns when a synergy will be lost']],
   fix:[]},
  {v:'0.9.13',
   neu:[['Tages-Challenge: gleiche Welt für alle, 3 Versuche, Belohnungen für Top 10 und Serien','Daily challenge: same world for everyone, 3 tries, rewards for top 10 and streaks'],['Vibration bei Schaden, Boss-Sieg und Tod (abschaltbar)','Vibration on damage, boss kill and death (can be turned off)']],
@@ -3495,9 +3509,11 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=
   if(!$('scrLegal').hidden){setScreen('scrSet');return}
   if(state==='menu'||state==='over'){if(!$('scrFb').hidden){fbBack();return}if(state==='over'){toMenu();return}refreshMenu();setScreen('scrMenu')}
  })})();
-/* Touch: neuester Lenk-Finger lenkt · zweimal schnell auf dieselbe Seite tippen = Doppelsprung
+/* Touch: neuester Lenk-Finger lenkt · Sprung-Knopf unten rechts = Doppelsprung
    · zweiter Finger auf derselben Seite = Doppelsprung, auf der anderen Seite = Richtungswechsel */
-const touches=new Map(),lastTap={sd:null,t:0};
+const touches=new Map();
+{const b=$('bDj');b.style.setProperty('--x',0);b.querySelector('span').style.backgroundImage=`url(${iconURL('doppelsprung')})`;
+ b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audioOn();airJump()});b.addEventListener('contextmenu',e=>e.preventDefault())}
 const sideOf=x=>{const r=cv.getBoundingClientRect();return x-r.left<r.width/2?'l':'r'};
 const steerId=()=>{let id=null;for(const [k,t] of touches)if(!t.jumpOnly)id=k;return id};
 const applySteer=()=>{const id=steerId();if(id===null){keys.left=keys.right=false;return}const sd=sideOf(touches.get(id).x);keys.left=sd==='l';keys.right=sd==='r'};
@@ -3505,7 +3521,6 @@ cv.addEventListener('pointerdown',e=>{audioOn();if(state!=='play')return;e.preve
  const t={y0:e.clientY,t0:performance.now(),x:e.clientX,jumpOnly:false};
  const cur=steerId(),sd=sideOf(e.clientX),now=performance.now();
  if(cur!==null&&sideOf(touches.get(cur).x)===sd){t.jumpOnly=true;airJump()}
- else if(lastTap.sd===sd&&now-lastTap.t<300){airJump();lastTap.t=0}else{lastTap.sd=sd;lastTap.t=now}
  touches.set(e.pointerId,t);applySteer();
  try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{const t=touches.get(e.pointerId);if(!t)return;const r=cv.getBoundingClientRect(),now=performance.now();

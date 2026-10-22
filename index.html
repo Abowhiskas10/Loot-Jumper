@@ -128,6 +128,9 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 .reveal{min-height:5.4em;width:100%;display:flex;align-items:center;justify-content:center}
 .reveal .card{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
+.dres{color:var(--muted);margin:.2em 0 .6em}
+.dreward{font-family:var(--display);font-size:1.6em;color:var(--gold);display:flex;gap:.35em;align-items:center;justify-content:center;text-shadow:0 2px 0 var(--ink);margin-bottom:.4em}
+.dreward.none{font-family:inherit;font-size:.9em;color:var(--muted);text-shadow:none}
 .btn.daily{border-color:var(--ink);box-shadow:inset 0 0 0 2px #5fe0c8;color:#9ff3e2}
 .dchar{display:flex;gap:.75em;align-items:center;text-align:left;background:var(--panel);border:2px solid var(--ink);border-radius:.6em;padding:.5em .7em;width:100%;box-shadow:inset 0 0 0 1px var(--line)}
 .dchar img{width:3.4em;height:3.4em;flex:none}.dchar b{display:block}.dchar small{color:var(--muted);font-size:.75em;line-height:1.3;display:block}
@@ -395,7 +398,7 @@ html.touch .card kbd{display:none}
       <button class="btn" id="bSet">Einstellungen</button>
     </div>
     <div class="hint k-only"><kbd>A</kbd> <kbd>D</kbd> oder <kbd>←</kbd> <kbd>→</kbd> bewegen · Springen und Schießen passieren automatisch<br><kbd>W</kbd> / <kbd>↑</kbd> Doppelsprung (mit Wolkenstiefel)<br><kbd>P</kbd> Pause · <kbd>M</kbd> Ton</div>
-    <div class="hint t-only">Linke oder rechte Hälfte halten = lenken<br>Springen und Schießen passieren automatisch<br>Nach oben wischen = Doppelsprung (mit Wolkenstiefel) · <b>II</b> = Pause</div>
+    <div class="hint t-only">Linke oder rechte Hälfte halten = lenken<br>Springen und Schießen passieren automatisch<br>Doppelt tippen = Doppelsprung (mit Wolkenstiefel) · <b>II</b> = Pause</div>
   </div>
 
 
@@ -597,6 +600,14 @@ html.touch .card kbd{display:none}
   </div>
 
   <!-- Was ist neu -->
+  <div class="ov" id="scrDRes" hidden>
+    <div class="tag">Tages-Challenge · gestern</div>
+    <h2 id="drTitle">Platz 1</h2>
+    <p class="dres" id="drText"></p>
+    <div class="dreward" id="drReward"></div>
+    <div class="btns"><button class="btn main" id="bDResOk">Super!</button></div>
+  </div>
+
   <div class="ov top" id="scrNews" hidden>
     <div class="tag">Update</div>
     <h2>Was ist neu?</h2>
@@ -771,7 +782,7 @@ const EN_DATA={
  chests:{holz:'Common Chest',selten:'Rare Chest',magie:'Epic Chest',legend:'Legendary Chest'},
  enemies:{slime:'Slimeling',bat:'Cave Flutter',shooter:'Spewer',mimic:'Mimic',tank:'Rock Shell',shaman:'Rune Caller',spitter:'Poison Spitter',charger:'Storm Ram'},
  bosses:{golem:'Stone Golem',ooze:'Toxic Ooze',hunter:'Sky Hunter',thunder:'Thunder Colossus',beast:'Inferno Beast',warden:'The Warden'},
- pu:{magnet:'Super Magnet',schild:'Invincible',doppelt:'Double Coins',raserei:'Frenzy',rakete:'Rocket Jump'},
+ pu:{magnet:'Super Magnet',schild:'Invincible',doppelt:'Double Coins',raserei:'Storm Fire',rakete:'Rocket Jump'},
  chars:{abenteurer:['Adventurer','Slingshot','Shoots stones at the nearest enemy.','Balanced, no weaknesses.','Available from the start'],
   funken:['Spark Mage','Lightning Staff','Chain lightning that jumps to 3 enemies.','Lightning items appear twice as often. Only 80 HP.','Defeat the Thunder Colossus.'],
   schmied:['Blacksmith','Boomerang Hammer','Throws a hammer that smashes through everything and comes back.','Landings create small shockwaves. 120 HP, but slower.','Defeat the Stone Golem 3 times.'],
@@ -819,7 +830,7 @@ function translateStatic(root){
 function applyLang(lang){
  if(lang)LANG=lang;document.documentElement.lang=LANG;
  applyLangData();translateStatic(document.getElementById('stage'));
- if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.')+tr(' Abklingzeit 10 Sek.');
+ if(IS_TOUCH&&typeof IT!=='undefined'&&IT.doppelsprung)IT.doppelsprung.d=tr('Doppelsprung: Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.')+tr(' Abklingzeit 10 Sek.');
  if(typeof hudCache!=='undefined')hudCache={};
 }
 
@@ -1196,9 +1207,21 @@ function dailyStreakTick(day){const s=save.dstreak||(save.dstreak={n:0,last:null
  const coins=DAILY_STREAK[Math.min(s.n,7)-1];save.coins+=coins;persist();return{n:s.n,coins,hat:s.n===7}}
 function dayBefore(day){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)}
 function streakNow(){const s=save.dstreak;if(!s||!s.last)return 0;return(s.last===berlinDay(0)||s.last===berlinDay(-1))?s.n:0}
+// Ergebnis von gestern: Platz für alle Teilnehmer, Münzen für die Top 10 (Server vergibt sie genau einmal)
 async function dailyClaim(){if(!ONLINE||!save.pid||!save.psec)return;const t=berlinDay(0);if(save.dclaim===t)return;
- try{const rk=await dailyRpc('daily_claim',{p_player:save.pid,p_secret:save.psec});save.dclaim=t;
-  if(rk>0){const c=DAILY_TOP[rk-1];save.coins+=c;persist();refreshMenu();toast(tr('Tages-Challenge gestern: Platz ')+rk+' · +'+c+' '+tr('Münzen'),'gold');SFX.legend&&SFX.legend()}else persist()}catch(e){}}
+ try{const rows=await dailyRpc('daily_result',{p_player:save.pid,p_secret:save.psec});save.dclaim=t;const r=rows&&rows[0];
+  if(r){const coins=r.r_reward_rank>0?DAILY_TOP[r.r_reward_rank-1]:0;if(coins){save.coins+=coins;refreshMenu()}
+   save.dresPend={rank:r.r_rank,total:r.r_total,score:r.r_score,coins,already:r.r_rank<=10&&!coins}}
+  persist();maybeShowDRes()}catch(e){}}
+let dresBack='scrMenu';
+function maybeShowDRes(){const d=save.dresPend;if(!d||state!=='menu'||!$('scrNews').hidden||!$('scrDRes').hidden)return;
+ dresBack=['scrDaily','scrMenu'].find(id=>!$(id).hidden)||'scrMenu';
+ $('drTitle').textContent=tr('Platz')+' '+d.rank+' '+tr('von')+' '+d.total;
+ $('drText').textContent=tr('Deine Höhe: ')+d.score+' m';
+ const rw=$('drReward');rw.className='dreward'+(d.coins?'':' none');
+ rw.innerHTML=d.coins?`+${d.coins} <span class="cic"></span>`:'';if(!d.coins)rw.textContent=d.already?tr('Belohnung bereits erhalten.'):tr('Keine Belohnung – nur die Top 10 bekommen Münzen. Morgen wieder!');
+ $('bDResOk').textContent=d.coins?tr('Super!'):tr('Okay');
+ setScreen('scrDRes');if(d.coins&&SFX.legend)SFX.legend();setTimeout(()=>$('bDResOk').focus({preventScroll:true}),40)}
 // Ohne Server (z. B. Test-Artifact): Tages-Challenge wird lokal simuliert, nur im Testmodus
 function dailyLocal(){return!ONLINE&&CFG.devMode!==false}
 async function dailyRpc(fn,b){if(ONLINE)return Board.rpc(fn,b);if(!dailyLocal())throw new Error('offline');
@@ -1207,7 +1230,7 @@ async function dailyRpc(fn,b){if(ONLINE)return Board.rpc(fn,b);if(!dailyLocal())
  if(fn==='daily_start'){if(m.tries>=3)throw new Error('HTTP 400');m.tries++;persist();return 3-m.tries}
  if(fn==='daily_submit'){m.best=Math.max(m.best,b.p_score);persist();return'ok'}
  if(fn==='daily_board')return m.best?[{name:save.name,score:m.best,zone:1,cyc:0,is_me:true}]:[];
- if(fn==='daily_claim')return 0;return null}
+ if(fn==='daily_claim')return 0;if(fn==='daily_result')return[];return null}
 async function openDaily(){
  if(!save.name){askName(openDaily);return}
  ensureIds();const dc=dailyToday(),ch=CH_BY[dc.char];setScreen('scrDaily');
@@ -1398,7 +1421,7 @@ function nearest(x,y,maxD,excl){let best=null,bd=maxD*maxD;for(const e of liveTa
 function fire(tgt){
  SFX.shoot();
  const p=G.p,sx=p.x,sy=p.y-20;
- const a=Math.atan2(tgt.y-sy,tgt.x-sx),n=st.proj,spread=.15;
+ const a=Math.atan2(tgt.y-sy,tgt.x-sx),n=st.proj,spread=G.pu.raserei>0?.26:.15;
  for(let i=0;i<n;i++){const aa=a+(i-(n-1)/2)*spread;makeShot(sx,sy,aa,st.dmg,tgt)}
  p.face=tgt.x<p.x?-1:1;
 }
@@ -1407,12 +1430,12 @@ const PU={
  magnet:{name:'Supermagnet',ab:'M',col:'#ff7a6b',dur:10},
  schild:{name:'Unbesiegbar',ab:'U',col:'#8fe9ff',dur:6},
  doppelt:{name:'Doppelte Münzen',ab:'×2',col:'#f2c14e',dur:15},
- raserei:{name:'Raserei',ab:'R',col:'#ff9a4a',dur:8},
+ raserei:{name:'Sturmfeuer',ab:'S',col:'#ff9a4a',dur:8}, // intern weiter 'raserei' (Werkstatt-Stufen bleiben erhalten)
  rakete:{name:'Raketensprung',ab:'↑',col:'#c4a6ff',dur:0},
 };
 function activatePU(type){const p=G.p,u=PU[type];
  if(type==='rakete'){p.vy=-2700*[1,1.15,1.3,1.3][wsLvl('rakete')];G.pu.schild=Math.max(G.pu.schild,1.6);if(wsLvl('rakete')>=3)rocketBlast()}else G.pu[type]=puDur(type)*(st.fortuna?1.5:1);
- ring(p.x,p.y-16,70,u.col,.5);burst(p.x,p.y-16,u.col,24,260,5);SFX.powerup();toast(tr('Power-up: ')+u.name,'gold');
+ ring(p.x,p.y-16,70,u.col,.5);burst(p.x,p.y-16,u.col,24,260,5);SFX.powerup();if(type==='raserei'){text(p.x,p.y-60,tr('STURMFEUER!'),u.col,20,1.1,true);ring(p.x,p.y-16,110,'#ffd36a',.6)}else toast(tr('Power-up: ')+u.name,'gold');
 }
 function fireballBoom(x,y,dmg){const Rr=75;ring(x,y,Rr,C.fire,.4);burst(x,y,C.fire,18,260,5);SFX.boom();
  for(const e of liveTargets())if(dist2(e.x,e.y,x,y)<(Rr+e.r)**2){onHit(e,dmg,{noFire:true});e.burn.t=3;e.burn.dps=Math.max(e.burn.dps,5+2*st.glut)}}
@@ -1720,7 +1743,7 @@ function update(dt){
  if(p.hp<p.maxHp*.25&&p.hp>0){heartT-=dt;if(heartT<=0){heartT=.9;SFX.heart()}}
  if(G.adrenT>0){G.adrenT-=dt;if(G.adrenT<=0)G.adren=0}
  for(const k in G.pu)if(G.pu[k]>0)G.pu[k]=Math.max(0,G.pu[k]-dt);
- if(G.djCd>0){G.djCd=Math.max(0,G.djCd-dt);if(G.djCd===0&&st.doppelsprung){ring(G.p.x,G.p.y-16,30,'#dfe6ff',.3)}}
+ if(G.djCd>0){G.djCd=Math.max(0,G.djCd-dt);if(G.djCd===0&&st.doppelsprung){const p=G.p;ring(p.x,p.y,34,'#dfe6ff',.35);for(let i=0;i<10;i++)G.parts.push({x:p.x+rand(-14,14),y:p.y+rand(-4,4),vx:rand(-90,90),vy:rand(-50,10),life:.45,max:.45,col:'#dfe6ff',size:4});try{beep(880,.09,'sine',.04,1320)}catch(e){}}}
  // camera
  if(G.arena){G.camY=lerp(G.camY,G.arena.lockY,Math.min(1,dt*3))}
  else{const target=p.y-H*.42;if(target<G.camY)G.camY=lerp(G.camY,target,Math.min(1,dt*12))}
@@ -1751,7 +1774,7 @@ function update(dt){
  G.platforms=G.platforms.filter(pl=>pl.alive&&pl.y<G.camY+H+120);
 
  // weapon
- G.fireT-=dt*(G.pu.raserei>0?2:1)*(1+.05*(G.adren||0));
+ G.fireT-=dt*(1+.05*(G.adren||0));
  if(CHR().id==='waechter'){const t=nearest(p.x,p.y-20,st.range);G.laser=t||null;if(t){G.laserT=(G.laserT||0)-dt*(G.pu.raserei>0?2:1);if(G.laserT<=0){G.laserT=.1*(st.fireInt/.55);onHit(t,st.dmg*.33*(1+.25*(st.proj-1)),{noChain:G.laserN++%4!==0});p.face=t.x<p.x?-1:1}}}
  if(CHR().rate>0&&CHR().id!=='waechter'&&G.fireT<=0){const t=nearest(p.x,p.y-20,CHR().range||st.range);if(t){charFire(t);G.fireT=st.fireInt;
    if(st.ueberladung){G.shotN++;if(G.shotN%(6-st.ueberladung)===0)chain(p.x,p.y-20,st.dmg*1.3,4,t)}}else G.fireT=.05}
@@ -1958,7 +1981,8 @@ const PORTRAITS={};
 function portraitURL(cid){if(PORTRAITS[cid])return PORTRAITS[cid];const cv2=document.createElement('canvas');cv2.width=cv2.height=96;const g=cv2.getContext('2d');g.scale(2,2);g.translate(24,42);drawFigure(g,cid,1,0,0,.5);
  try{PORTRAITS[cid]=cv2.toDataURL()}catch(e){PORTRAITS[cid]=''}return PORTRAITS[cid]}
 // --- Startwaffen ---
-function charFire(t){
+function charFire(t){const sp0=st.proj;if(G.pu.raserei>0)st.proj+=2;try{charFire0(t)}finally{st.proj=sp0}}
+function charFire0(t){
  const p=G.p,ch=CHR(),sx=p.x,sy=p.y-22,a=Math.atan2(t.y-sy,t.x-sx);p.face=t.x<p.x?-1:1;
  switch(ch.id){
   case'funken':chain(sx+p.face*14,p.y-40,st.dmg*ch.dmg,2+st.proj,t);break;
@@ -1972,7 +1996,7 @@ function charFire(t){
   default:fire(t);
  }
 }
-function akrobatRing(){const p=G.p,ch=CHR();if(ch.id!=='akrobat')return;const n=6+2*st.proj;for(let i=0;i<n;i++)makeShot(p.x,p.y-14,i/n*Math.PI*2-Math.PI/2,st.dmg*ch.dmg,null);SFX.shoot()}
+function akrobatRing(){const p=G.p,ch=CHR();if(ch.id!=='akrobat')return;const n=6+2*(st.proj+(G.pu.raserei>0?2:0));for(let i=0;i<n;i++)makeShot(p.x,p.y-14,i/n*Math.PI*2-Math.PI/2,st.dmg*ch.dmg,null);SFX.shoot()}
 function flaskSplash(s){const R2=58;ring(s.x,s.y,R2,C.poison,.4);burst(s.x,s.y,C.poison,16,200,4);SFX.boom();
  for(const e of liveTargets())if(dist2(e.x,e.y,s.x,s.y)<(R2+e.r)**2){onHit(e,s.dmg,{noFire:true});e.poison.stacks=Math.min(5,e.poison.stacks+2);e.poison.t=CHR().id==='alchemist'?8:4}}
 
@@ -2067,7 +2091,7 @@ const ICON_DRAW={
  pu_magnet:g=>ICON_DRAW.magnet(g),
  pu_schild:g=>{icCircle(g,16,16,12,'rgba(143,233,255,.35)');icPoly(g,[[16,7],[23,10],[22,19],[16,25],[10,19],[9,10]],'#8fe9ff');icShine(g,12,11,1.8)},
  pu_doppelt:g=>{icCoin(g,12,19,7);icCoin(g,20,13,7);g.fillStyle=ICON_INK;g.font='bold 9px sans-serif';g.textAlign='center';g.fillText('×2',20,16)},
- pu_raserei:g=>{icPoly(g,[[4,9],[14,16],[4,23]],'#ff9a4a');icPoly(g,[[14,9],[24,16],[14,23]],'#ffd36a');icLine(g,[[26,8],[26,24]],ICON_INK,3)},
+ pu_raserei:g=>{for(const [a,c] of[[-.6,'#ff9a4a'],[0,'#ffd36a'],[.6,'#ff9a4a']]){g.save();g.translate(16,27);g.rotate(a);icLine(g,[[0,0],[0,-17]],ICON_INK,5);icLine(g,[[0,0],[0,-17]],c,2.6);icPoly(g,[[-4.5,-15],[0,-23],[4.5,-15]],c);g.restore()}g.fillStyle='#ffd36a';g.beginPath();g.arc(16,27,3.2,0,7);g.fill();g.strokeStyle=ICON_INK;g.lineWidth=1.6;g.stroke()},
  pu_rakete:g=>{icPoly(g,[[16,3],[22,12],[22,22],[10,22],[10,12]],'#dfe6ee');icCircle(g,16,13,2.5,'#6fd3ff',1.4);icPoly(g,[[10,16],[5,24],[10,22]],'#ff6b5e',1.6);icPoly(g,[[22,16],[27,24],[22,22]],'#ff6b5e',1.6);icFlame(g,16,27,.45)},
 };
 function iconCanvas(id,px){const key=id+'@'+(px||64);if(ICONS[key])return ICONS[key];
@@ -2362,6 +2386,10 @@ function drawChest(c){if(c.pl&&c.pl.chain&&c.pl.vis<.3)return;const b=Math.sin(c
 function drawPlayer(p){
  if(p.inv>0&&p.inv<.95&&Math.floor(p.inv*18)%2)ctx.globalAlpha=.4;
  if(p.vy>650&&!reduceMotion){ctx.save();ctx.strokeStyle='rgba(223,230,255,.35)';ctx.lineWidth=2;const k=clamp((p.vy-650)/700,0,1);for(let i=-1;i<=1;i++){const xx=p.x+i*9,yy=p.y-46-((G.t*300+i*37)%26);ctx.beginPath();ctx.moveTo(xx,yy);ctx.lineTo(xx,yy-10-12*k);ctx.stroke()}ctx.restore()}
+ // Adrenalin: orange Aura wird mit jedem Stapel stärker, flackert kurz vor dem Verfallen
+ if(G.adren>0){const k=G.adren/Math.max(1,st.adrenMax),fl=G.adrenT<1.2?(Math.sin(G.t*28)>0?.35:1):1,rr=26+k*14+Math.sin(G.t*6)*2;
+  const gr=ctx.createRadialGradient(p.x,p.y-16,6,p.x,p.y-16,rr);gr.addColorStop(0,`rgba(255,154,74,${(.18+.32*k)*fl})`);gr.addColorStop(1,'rgba(255,107,94,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y-16,rr,0,7);ctx.fill();
+  if(!reduceMotion&&Math.random()<.15+.35*k)G.parts.push({x:p.x+rand(-12,12),y:p.y-rand(4,30),vx:rand(-20,20),vy:-rand(60,130),life:.4,max:.4,col:Math.random()<.5?'#ff9a4a':'#ffd36a',size:2.5})}
  ctx.save();ctx.translate(p.x,p.y);
  {const up=clamp(-p.vy/1300,0,1)*(1-p.squash),lean=clamp((p.vx||0)/430,-1,1)*.13;
   ctx.translate(0,-16);ctx.rotate(lean);if(p.cheerT>0){const k=1-p.cheerT/1.1;ctx.rotate(Math.min(1,k*1.6)*Math.PI*2*(p.face||1))}ctx.scale(1-up*.09,1+up*.13);ctx.translate(0,16)}
@@ -2372,6 +2400,14 @@ function drawPlayer(p){
  if(G.pu.schild>0){ctx.fillStyle='#8fe9ff';ctx.globalAlpha=.16+.08*Math.sin(G.t*12);ctx.beginPath();ctx.arc(p.x,p.y-16,30,0,7);ctx.fill();ctx.globalAlpha=G.pu.schild<1.5&&Math.sin(G.t*30)>0?.3:.9;ctx.strokeStyle='#dffaff';ctx.lineWidth=2.5;ctx.stroke();ctx.globalAlpha=1}
  if(p.shieldReady){ctx.strokeStyle='#8fe9ff';ctx.globalAlpha=.45+.2*Math.sin(G.t*5);ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y-16,24,0,7);ctx.stroke();ctx.globalAlpha=1}
  if(p.revive){ctx.fillStyle=C.gold;ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(p.x+p.face*-16,p.y-30,2.5,0,7);ctx.fill();ctx.globalAlpha=1}
+ // Adrenalin-Zähler neben der Figur
+ if(G.adren>0){const fl=G.adrenT<1.2&&Math.sin(G.t*28)<0;ctx.font='800 13px "Chakra Petch",sans-serif';ctx.textAlign='left';ctx.lineWidth=3;ctx.strokeStyle=C.ink;const tx='×'+G.adren,x=p.x+19,y=p.y-38;
+  ctx.globalAlpha=fl?.45:1;ctx.strokeText(tx,x,y);ctx.fillStyle=G.adren>=st.adrenMax?'#ffd36a':'#ff9a4a';ctx.fillText(tx,x,y);ctx.globalAlpha=1}
+ // Doppelsprung-Abklingzeit: Halbkreis unter den Füßen füllt sich
+ if(st.doppelsprung&&G.djCd>0){const f=1-G.djCd/djCdMax(),cx=p.x,cy=p.y+3,R=17;ctx.lineCap='round';
+  ctx.strokeStyle='rgba(10,13,19,.75)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,cy,R,Math.PI*.15,Math.PI*.85);ctx.stroke();
+  ctx.strokeStyle='rgba(223,230,255,.28)';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(cx,cy,R,Math.PI*.15,Math.PI*.85);ctx.stroke();
+  ctx.strokeStyle='#dfe6ff';ctx.beginPath();ctx.arc(cx,cy,R,Math.PI*.85-Math.PI*.7*f,Math.PI*.85);ctx.stroke();ctx.lineCap='butt'}
 }
 function drawPU(u){const P=PU[u.type],b=Math.sin(u.t*3)*4,x=u.x,y=u.y+b;
  ctx.fillStyle=P.col;ctx.globalAlpha=.22+.12*Math.sin(u.t*5);ctx.beginPath();ctx.arc(x,y,26,0,7);ctx.fill();ctx.globalAlpha=1;
@@ -2914,7 +2950,7 @@ Object.assign(EN_TXT,{
  'Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.':'Jumping and shooting happen automatically. If you fall off the bottom of the screen, the run is over.',
  'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.':'Your weapon aims on its own. Touching enemies or getting shot costs health.',
  'Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.':'Touch it to open it, then pick one of three upgrades.',
- 'Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.':'In mid-air, swipe up or tap a second finger on the same side.',
+ 'Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.':'In mid-air, double-tap the same side or tap with a second finger.',
  'Drücke in der Luft W, ↑ oder Leertaste.':'Press W, ↑ or Space in mid-air.',
  'Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.':'Dodge the attacks, your weapons hit automatically. A merchant awaits afterwards.',
  'Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.':'A poison flood rises from below. Keep moving and climb fast.',
@@ -2926,9 +2962,9 @@ Object.assign(EN_TXT,{
  'Tippen zum Überspringen':'Tap to skip',
  'Linke oder rechte Hälfte halten = lenken':'Hold left or right half = steer',
  'Springen und Schießen passieren automatisch':'Jumping and shooting happen automatically',
- 'Nach oben wischen = Doppelsprung (mit Wolkenstiefel) ·':'Swipe up = double jump (with Cloud Boots) ·',
+ 'Doppelt tippen = Doppelsprung (mit Wolkenstiefel) ·':'Double-tap = double jump (with Cloud Boots) ·',
  'Doppelsprung (mit Wolkenstiefel)':'double jump (with Cloud Boots)','Pause ·':'pause ·','Wähle eine Verbesserung':'Choose an upgrade',
- 'Doppelsprung: Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.':'Double jump: in mid-air, swipe up or tap a second finger on the same side.'
+ 'Doppelsprung: Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.':'Double jump: in mid-air, double-tap the same side or tap with a second finger.'
 });
 Object.assign(EN_TXT,{'Der Wächter ist besiegt':'The Warden is defeated','Gipfel bezwungen!':'Summit conquered!',
  'Du hast alle sechs Zonen geschafft. Ab jetzt beginnt der Endlos-Aufstieg: Alle Zonen kommen wieder, und die Bosse werden mit jedem Zyklus stärker.':'You cleared all six zones. Now the endless climb begins: every zone returns, and the bosses grow stronger with each cycle.',
@@ -2963,15 +2999,15 @@ Object.assign(EN_TXT,{'Kosmetik':'Cosmetics','Power-ups':'Power-ups','Rein optis
  'Herzchen':'Hearts','Münzregen':'Coin Shower','Blitzlandung':'Lightning Landing','Konfetti':'Confetti'});
 Object.assign(EN_TXT,{'Alle Kosmetik freischalten':'Unlock all cosmetics','Testmodus: alle Kosmetik freischalten':'Test mode: unlock all cosmetics','Alle Kosmetik freigeschaltet (Testmodus)':'All cosmetics unlocked (test mode)'});
 Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz':'Privacy','Impressum':'Imprint'});
-Object.assign(EN_TXT,{'Testmodus: ohne Server, nur auf diesem Gerät.':'Test mode: no server, this device only.','Test: Versuche zurücksetzen':'Test: reset tries','Tages-Challenge':'Daily Challenge','Alle spielen heute dieselbe Welt mit demselben Charakter und denselben 12 Items. Ohne Werkstatt-Upgrades. Neue Challenge um 00:00 Uhr (deutsche Zeit).':'Everyone plays the same world today with the same character and the same 12 items. No workshop upgrades. New challenge at midnight (German time).','Versuche übrig':'Tries left','Dein Bestwert':'Your best','Serie (Tage)':'Streak (days)','Versuch starten':'Start attempt','Heute · Top 10':'Today · Top 10','Top 10 des Vortags: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 Münzen.':'Yesterday\'s top 10: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 coins.','Serie: 20 / 30 / 40 / 50 / 60 / 70 Münzen, ab Tag 7 je 100 und die Kalenderkrone.':'Streak: 20 / 30 / 40 / 50 / 60 / 70 coins, from day 7 100 each and the Calendar Crown.','Die Tages-Challenge braucht eine Internetverbindung.':'The daily challenge needs an internet connection.','Lade …':'Loading …','Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.':'No tries left today. A new challenge starts tomorrow.','Server nicht erreichbar. Bitte später nochmal versuchen.':'Server unreachable. Please try again later.','Tages-Challenge wird eingetragen …':'Submitting daily score …','Tages-Challenge: Platz':'Daily challenge: place','Tages-Challenge gerade nicht erreichbar.':'Daily challenge currently unreachable.','Tages-Challenge gestern: Platz ':'Yesterday\'s daily: place ','Serie':'Streak','Tag':'day','Tage':'days','Kalenderkrone':'Calendar Crown','7 Tage Serie in der Tages-Challenge':'7-day streak in the daily challenge','Zur Tages-Challenge':'To daily challenge','Neuer Run':'New run','Vibration: ':'Vibration: ','Vibration: an':'Vibration: on','Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
+Object.assign(EN_TXT,{'Synergie weg: ':'Synergy lost: ',' · Tippen = verkaufen':' · tap = sell','STURMFEUER!':'STORM FIRE!','Sturmfeuer':'Storm Fire','Tages-Challenge · gestern':'Daily challenge · yesterday','Platz':'Place','Deine Höhe: ':'Your height: ','Belohnung bereits erhalten.':'Reward already received.','Keine Belohnung – nur die Top 10 bekommen Münzen. Morgen wieder!':'No reward – only the top 10 get coins. Try again tomorrow!','Super!':'Great!','Okay':'Okay','Testmodus: ohne Server, nur auf diesem Gerät.':'Test mode: no server, this device only.','Test: Versuche zurücksetzen':'Test: reset tries','Tages-Challenge':'Daily Challenge','Alle spielen heute dieselbe Welt mit demselben Charakter und denselben 12 Items. Ohne Werkstatt-Upgrades. Neue Challenge um 00:00 Uhr (deutsche Zeit).':'Everyone plays the same world today with the same character and the same 12 items. No workshop upgrades. New challenge at midnight (German time).','Versuche übrig':'Tries left','Dein Bestwert':'Your best','Serie (Tage)':'Streak (days)','Versuch starten':'Start attempt','Heute · Top 10':'Today · Top 10','Top 10 des Vortags: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 Münzen.':'Yesterday\'s top 10: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 coins.','Serie: 20 / 30 / 40 / 50 / 60 / 70 Münzen, ab Tag 7 je 100 und die Kalenderkrone.':'Streak: 20 / 30 / 40 / 50 / 60 / 70 coins, from day 7 100 each and the Calendar Crown.','Die Tages-Challenge braucht eine Internetverbindung.':'The daily challenge needs an internet connection.','Lade …':'Loading …','Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.':'No tries left today. A new challenge starts tomorrow.','Server nicht erreichbar. Bitte später nochmal versuchen.':'Server unreachable. Please try again later.','Tages-Challenge wird eingetragen …':'Submitting daily score …','Tages-Challenge: Platz':'Daily challenge: place','Tages-Challenge gerade nicht erreichbar.':'Daily challenge currently unreachable.','Tages-Challenge gestern: Platz ':'Yesterday\'s daily: place ','Serie':'Streak','Tag':'day','Tage':'days','Kalenderkrone':'Calendar Crown','7 Tage Serie in der Tages-Challenge':'7-day streak in the daily challenge','Zur Tages-Challenge':'To daily challenge','Neuer Run':'New run','Vibration: ':'Vibration: ','Vibration: an':'Vibration: on','Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.13';
+const GAME_VER='0.9.14';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
  chest:{title:'Truhe',tx:()=>'Berühre sie, um sie zu öffnen. Dann wählst du eine von drei Verbesserungen.'},
- dj:{title:'Doppelsprung',tx:()=>IS_TOUCH?'Wische in der Luft nach oben oder tippe mit einem zweiten Finger auf derselben Seite.':'Drücke in der Luft W, ↑ oder Leertaste.'},
+ dj:{title:'Doppelsprung',tx:()=>IS_TOUCH?'Tippe in der Luft zweimal schnell auf dieselbe Seite oder mit einem zweiten Finger.':'Drücke in der Luft W, ↑ oder Leertaste.'},
  boss:{title:'Bosskampf',tx:()=>'Weiche den Angriffen aus, deine Waffen treffen automatisch. Danach wartet ein Händler.'},
  zone1:{title:'Vergessene Ruinen',tx:()=>'Achtung, Pfeilfallen: Wo eine Rune an der Wand aufleuchtet, fliegt gleich ein Pfeil quer durchs Bild. Leuchtende Runen-Plattformen lassen dich höher springen.'},
  zone2:{title:'Giftsumpf',tx:()=>'Von unten steigt eine Giftflut. Bleib in Bewegung und klettere zügig.'},
@@ -3161,6 +3197,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.14',
+  neu:[['Sturmfeuer ersetzt Raserei: 8 Sek. lang Schüsse im Fächer','Storm Fire replaces Frenzy: 8 s of fan shots'],['Handy: Doppelsprung durch zweimal schnell tippen','Phone: double jump by double-tapping'],['Abklingzeit des Doppelsprungs und Adrenalin an der Figur sichtbar','Double jump cooldown and adrenaline shown on the character'],['Tages-Challenge: Fenster mit Platz und Belohnung vom Vortag','Daily challenge: window with yesterday\'s place and reward'],['Verkaufen warnt, wenn eine Synergie verloren geht','Selling warns when a synergy will be lost']],
+  fix:[]},
  {v:'0.9.13',
   neu:[['Tages-Challenge: gleiche Welt für alle, 3 Versuche, Belohnungen für Top 10 und Serien','Daily challenge: same world for everyone, 3 tries, rewards for top 10 and streaks'],['Vibration bei Schaden, Boss-Sieg und Tod (abschaltbar)','Vibration on damage, boss kill and death (can be turned off)']],
   fix:[]},
@@ -3207,7 +3246,8 @@ function newsHTML(e){const L=LANG==='en'?1:0;const ul=a=>'<ul>'+a.map(x=>`<li>${
  return`<div class="ver">${tr('Version')} ${e.v}</div>${e.neu&&e.neu.length?`<div><h3 style="color:var(--teal)">${tr('Neu')}</h3>${ul(e.neu)}</div>`:''}${e.fix&&e.fix.length?`<div><h3 style="color:var(--gold)">${tr('Fehler behoben')}</h3>${ul(e.fix)}</div>`:''}`}
 let newsBack='scrMenu';
 function openNews(back){newsBack=back||'scrMenu';$('newsBody').innerHTML=newsHTML(CHANGELOG[0]);setScreen('scrNews');setTimeout(()=>$('bNewsOk').focus({preventScroll:true}),40)}
-$('bNewsOk').onclick=()=>{save.seenVer=GAME_VER;persist();refreshMenu();setScreen(newsBack)};
+$('bNewsOk').onclick=()=>{save.seenVer=GAME_VER;persist();refreshMenu();setScreen(newsBack);maybeShowDRes()};
+$('bDResOk').onclick=()=>{save.dresPend=null;persist();setScreen(dresBack);if(dresBack==='scrDaily')openDaily()};
 $('bNews').onclick=()=>openNews('scrSet');
 function maybeShowNews(){if(save.seenVer===GAME_VER)return;if(!(save.runs>0)){save.seenVer=GAME_VER;persist();return}openNews('scrMenu')}
 
@@ -3215,9 +3255,12 @@ function maybeShowNews(){if(save.seenVer===GAME_VER)return;if(!(save.runs>0)){sa
 // Ein Item verkaufen: Hälfte des Werts pro Stufe zurück, Slot wird frei. Entwicklungen nicht verkaufbar.
 let sellArm=null;
 function sellValue(id){return Math.max(5,Math.round(itemPrice(IT[id])*.5*(G.items[id]||1)))}
+// Hinweis beim Verkaufen: welche Synergien gehen verloren?
+function sellWarn(id){const it2={...G.items};delete it2[id];const s2=computeStats(it2).syn,lost=SYN.filter(x=>st.syn[x.id]&&!s2[x.id]).map(x=>x.name);
+ return lost.length?tr('Synergie weg: ')+lost.join(', ')+tr(' · Tippen = verkaufen'):tr('Sicher? Tippen zum Verkaufen')}
 function sellable(){return Object.keys(G.items).filter(id=>!G.merged.has(id)&&!IT[id].evo)}
 function renderSell(){const l=sellable();$('sellTitle').hidden=!l.length;
- $('shopSell').innerHTML=l.map(id=>{const it=IT[id],n=G.items[id];return`<button class="sell${sellArm===id?' arm':''}" data-sell="${id}" style="--rc:${RAR[it.r].c}">${iconImg(id)}<span>${sellArm===id?tr('Sicher? Tippen zum Verkaufen'):it.name+(n>1?' '+n:'')}</span><b><span class="cic"></span>+${sellValue(id)}</b></button>`}).join('');
+ $('shopSell').innerHTML=l.map(id=>{const it=IT[id],n=G.items[id];return`<button class="sell${sellArm===id?' arm':''}" data-sell="${id}" style="--rc:${RAR[it.r].c}">${iconImg(id)}<span>${sellArm===id?sellWarn(id):it.name+(n>1?' '+n:'')}</span><b><span class="cic"></span>+${sellValue(id)}</b></button>`}).join('');
  $('shopSell').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{const id=b.dataset.sell;if(sellArm!==id){sellArm=id;renderSell();return}sellArm=null;sellItem(id)})}
 function sellItem(id){if(!G.items[id])return;const v=sellValue(id),p=G.p;
  delete G.items[id];if(id==='phoenix')p.revive=false;
@@ -3301,9 +3344,9 @@ $('bLegalBack').onclick=()=>setScreen('scrSet');
 document.querySelectorAll('[data-legal]').forEach(b=>b.onclick=()=>openLegal(b.dataset.legal));
 
 /* ================= MENUS ================= */
-const screens=['scrDaily','scrLegal','scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
+const screens=['scrDRes','scrDaily','scrLegal','scrNews','scrWs','scrWin','scrFb','scrEvent','scrName','scrBoard','scrShop','scrMenu','scrLoad','scrChests','scrColl','scrSet','scrLoot','scrPause','scrOver','scrReel'];
 function setScreen(id){for(const s of screens)$(s).hidden=s!==id}
-function toMenu(){Music.set('menu');Music.setDuck(false);state='menu';G=null;$('hud').hidden=true;$('bossbar').hidden=true;refreshMenu();setScreen('scrMenu')}
+function toMenu(){Music.set('menu');Music.setDuck(false);state='menu';G=null;$('hud').hidden=true;$('bossbar').hidden=true;refreshMenu();setScreen('scrMenu');maybeShowDRes()}
 function syncSettings(){for(const [id,key] of VOLS){if(document.activeElement!==$(id))$(id).value=save[key];$(id+'V').textContent=save[key]+'%'}
  const lt=LANG==='en'?'Language: English':'Sprache: Deutsch';$('bLang').textContent=lt;$('pLang').textContent=lt;$('bLangMenu').textContent=LANG==='en'?'DE':'EN';
  const a=tr('Ton: ')+(save.sound?tr('an'):tr('aus')),b=tr('Bildschirmwackeln: ')+(save.shake?tr('an'):tr('aus'));$('bSound').textContent=a;$('pSound').textContent=a;$('bShake').textContent=b;$('pShake').textContent=b;$('bVib').textContent=tr('Vibration: ')+(save.vib===false?tr('aus'):tr('an'))}
@@ -3452,21 +3495,20 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=
   if(!$('scrLegal').hidden){setScreen('scrSet');return}
   if(state==='menu'||state==='over'){if(!$('scrFb').hidden){fbBack();return}if(state==='over'){toMenu();return}refreshMenu();setScreen('scrMenu')}
  })})();
-/* Touch: neuester Lenk-Finger lenkt · nach oben wischen (beliebig oft pro Halten) = Doppelsprung
+/* Touch: neuester Lenk-Finger lenkt · zweimal schnell auf dieselbe Seite tippen = Doppelsprung
    · zweiter Finger auf derselben Seite = Doppelsprung, auf der anderen Seite = Richtungswechsel */
-const touches=new Map();
+const touches=new Map(),lastTap={sd:null,t:0};
 const sideOf=x=>{const r=cv.getBoundingClientRect();return x-r.left<r.width/2?'l':'r'};
 const steerId=()=>{let id=null;for(const [k,t] of touches)if(!t.jumpOnly)id=k;return id};
 const applySteer=()=>{const id=steerId();if(id===null){keys.left=keys.right=false;return}const sd=sideOf(touches.get(id).x);keys.left=sd==='l';keys.right=sd==='r'};
 cv.addEventListener('pointerdown',e=>{audioOn();if(state!=='play')return;e.preventDefault();if(e.isPrimary)touches.clear();
  const t={y0:e.clientY,t0:performance.now(),x:e.clientX,jumpOnly:false};
- const cur=steerId();
- if(cur!==null&&sideOf(touches.get(cur).x)===sideOf(e.clientX)){t.jumpOnly=true;airJump()}
+ const cur=steerId(),sd=sideOf(e.clientX),now=performance.now();
+ if(cur!==null&&sideOf(touches.get(cur).x)===sd){t.jumpOnly=true;airJump()}
+ else if(lastTap.sd===sd&&now-lastTap.t<300){airJump();lastTap.t=0}else{lastTap.sd=sd;lastTap.t=now}
  touches.set(e.pointerId,t);applySteer();
  try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{const t=touches.get(e.pointerId);if(!t)return;const r=cv.getBoundingClientRect(),now=performance.now();
- if(e.clientY>t.y0||now-t.t0>260){t.y0=e.clientY;t.t0=now}
- if(t.y0-e.clientY>r.height*.035){airJump();t.y0=e.clientY;t.t0=now}
  t.x=e.clientX;applySteer()});
 const endTouch=e=>{if(touches.delete(e.pointerId))applySteer()};
 cv.addEventListener('pointerup',endTouch);cv.addEventListener('pointercancel',endTouch);addEventListener('pointerup',endTouch);addEventListener('pointercancel',endTouch);
@@ -3491,7 +3533,7 @@ if(CFG.devMode===false)$('devBox').hidden=true; // Veröffentlichte Version: kei
 refreshMenu();setScreen('scrMenu');
 maybeShowNews();setTimeout(dailyClaim,1500);
 requestAnimationFrame(frame);
-if(CFG.devMode!==false)window.__LJ={fig:(...a)=>drawFigure(...a),hat:(...a)=>drawHat(...a),get G(){return G},get state(){return state},get save(){return save},newRun,openLoot,chooseLoot,startBoss:()=>startBoss(),openBossReel:()=>openBossReel(),eligible:()=>eligible(),giveItem:id=>giveItem(IT[id]),evoReady:()=>evoReady().map(e=>e.id),iconIds:()=>Object.keys(ICON_DRAW),iconURL:id=>iconURL(id),doEvolve:id=>doEvolve(EVOS.find(e=>e.id===id)),trig:t=>triggerEvent({type:t,x:G.p.x,y:G.p.y,used:false}),openShop:()=>openShop(),activatePU:t=>activatePU(t),spawn:(t,x,y)=>makeEnemy(t,x,y,G.maxH)};
+if(CFG.devMode!==false)window.__LJ={fig:(...a)=>drawFigure(...a),hat:(...a)=>drawHat(...a),get G(){return G},get state(){return state},get save(){return save},newRun,openLoot,chooseLoot,startBoss:()=>startBoss(),openBossReel:()=>openBossReel(),eligible:()=>eligible(),giveItem:id=>giveItem(IT[id]),evoReady:()=>evoReady().map(e=>e.id),iconIds:()=>Object.keys(ICON_DRAW),iconURL:id=>iconURL(id),doEvolve:id=>doEvolve(EVOS.find(e=>e.id===id)),trig:t=>triggerEvent({type:t,x:G.p.x,y:G.p.y,used:false}),openShop:()=>openShop(),activatePU:t=>activatePU(t),fireAt:(x,y)=>{const n=G.shots.length;charFire({x,y,r:10});return G.shots.length-n},spawn:(t,x,y)=>makeEnemy(t,x,y,G.maxH)};
 })();
 </script>
 </body></html>

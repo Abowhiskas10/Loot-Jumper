@@ -201,6 +201,8 @@ kbd{font-family:var(--body);font-weight:700;font-size:.95em;background:var(--pan
 #tutBox .tutgo{display:block;margin-top:.6em;font-size:.72em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);animation:tutp 1.4s ease-in-out infinite}
 @keyframes tutp{50%{opacity:.45}}
 html.touch .k-only,html:not(.touch) .t-only{display:none!important}
+html.touch body{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+html.touch #stage{border-radius:0;box-shadow:none}
 html.touch .card kbd{display:none}
 .unl{width:min(100%,22em);display:flex;flex-direction:column;gap:.4em;text-align:left}
 .unl h3{margin:0;font-family:var(--display);font-size:.95em;color:var(--gold);letter-spacing:.06em;text-align:center}
@@ -842,7 +844,7 @@ function applyLang(lang){
 }
 
 /* ================= CONSTANTS ================= */
-const W=480,H=800,PXM=20,GRAV=2050;
+const W=480,PXM=20,GRAV=2050;let H=800; // H wächst auf hohen Handy-Displays (bis 1100), damit das Spiel den ganzen Bildschirm füllt
 const stage=document.getElementById('stage'),cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const $=id=>document.getElementById(id);
 let scale=1;
@@ -1141,11 +1143,14 @@ function fit(){
  const b=document.body,cs=getComputedStyle(b);
  const aw=b.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
  const ah=b.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
- const s=Math.max(50,Math.min(aw/3,ah/5));
- stage.style.width=(3*s)+'px';stage.style.height=(5*s)+'px';
- stage.style.setProperty('--u',(3*s/W)+'px');
+ // Handy (Hochformat): ganze Fläche nutzen – Spielwelt wird höher statt schwarzer Balken
+ const ratio=IS_TOUCH?Math.min(1100/W,Math.max(800/W,ah/aw)):5/3;
+ H=Math.round(W*ratio);
+ const sw=Math.max(150,Math.min(aw,ah/ratio)),sh=sw*ratio;
+ stage.style.width=sw+'px';stage.style.height=sh+'px';
+ stage.style.setProperty('--u',(sw/W)+'px');
  const dpr=Math.min(2,window.devicePixelRatio||1);
- cv.width=Math.round(3*s*dpr);cv.height=Math.round(5*s*dpr);scale=cv.width/W;
+ cv.width=Math.round(sw*dpr);cv.height=Math.round(sh*dpr);scale=cv.width/W;
 }
 addEventListener('resize',fit);fit();
 
@@ -3013,7 +3018,7 @@ Object.assign(EN_TXT,{'Datenschutz & Impressum':'Privacy & Imprint','Datenschutz
 Object.assign(EN_TXT,{'Synergie weg: ':'Synergy lost: ',' · Tippen = verkaufen':' · tap = sell','STURMFEUER!':'STORM FIRE!','Sturmfeuer':'Storm Fire','Tages-Challenge · gestern':'Daily challenge · yesterday','Platz':'Place','Deine Höhe: ':'Your height: ','Belohnung bereits erhalten.':'Reward already received.','Keine Belohnung – nur die Top 10 bekommen Münzen. Morgen wieder!':'No reward – only the top 10 get coins. Try again tomorrow!','Super!':'Great!','Okay':'Okay','Testmodus: ohne Server, nur auf diesem Gerät.':'Test mode: no server, this device only.','Test: Versuche zurücksetzen':'Test: reset tries','Tages-Challenge':'Daily Challenge','Alle spielen heute dieselbe Welt mit demselben Charakter und denselben 12 Items. Ohne Werkstatt-Upgrades. Neue Challenge um 00:00 Uhr (deutsche Zeit).':'Everyone plays the same world today with the same character and the same 12 items. No workshop upgrades. New challenge at midnight (German time).','Versuche übrig':'Tries left','Dein Bestwert':'Your best','Serie (Tage)':'Streak (days)','Versuch starten':'Start attempt','Heute · Top 10':'Today · Top 10','Top 10 des Vortags: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 Münzen.':'Yesterday\'s top 10: 300 · 200 · 150 · 100 · 80 · 70 · 60 · 50 · 40 · 30 coins.','Serie: 20 / 30 / 40 / 50 / 60 / 70 Münzen, ab Tag 7 je 100 und die Kalenderkrone.':'Streak: 20 / 30 / 40 / 50 / 60 / 70 coins, from day 7 100 each and the Calendar Crown.','Die Tages-Challenge braucht eine Internetverbindung.':'The daily challenge needs an internet connection.','Lade …':'Loading …','Keine Versuche mehr heute. Morgen gibt es eine neue Challenge.':'No tries left today. A new challenge starts tomorrow.','Server nicht erreichbar. Bitte später nochmal versuchen.':'Server unreachable. Please try again later.','Tages-Challenge wird eingetragen …':'Submitting daily score …','Tages-Challenge: Platz':'Daily challenge: place','Tages-Challenge gerade nicht erreichbar.':'Daily challenge currently unreachable.','Tages-Challenge gestern: Platz ':'Yesterday\'s daily: place ','Serie':'Streak','Tag':'day','Tage':'days','Kalenderkrone':'Calendar Crown','7 Tage Serie in der Tages-Challenge':'7-day streak in the daily challenge','Zur Tages-Challenge':'To daily challenge','Neuer Run':'New run','Vibration: ':'Vibration: ','Vibration: an':'Vibration: on','Heilen: 35% LP':'Heal: 35% HP',' Abklingzeit 10 Sek.':' Cooldown 10 s.','Doppelsprung':'Double jump','Leben':'Health','Alle freigeschaltet':'All unlocked','Dieser Name ist nicht erlaubt. Bitte wähle einen anderen.':'This name is not allowed. Please choose another one.','Neues episches oder legendäres Item, aus allen Items (auch gesperrten)':'New epic or legendary item, from all items (including locked)','Deine Slots sind voll. Der Altar bietet dir ein neues Item – dafür verschwindet eins deiner Items.':'Your slots are full. The altar offers a new item – but one of your items will vanish.','Verlieren: ':'Lose: ','Tauschen: −25% LP':'Swap: −25% HP','Kein Opfer, nichts passiert':'No sacrifice, nothing happens',' ist verschwunden':' has vanished','Spielzeit':'Play time'});
 /* ================= TUTORIAL ================= */
 // Beim ersten Mal, wenn etwas Neues auftaucht: Spiel hält an, Pfeil zeigt darauf, kurze Erklärung.
-const GAME_VER='0.9.15';
+const GAME_VER='0.9.16';
 const TUTS={
  move:{title:'Steuerung',tx:()=>(IS_TOUCH?'Halte die linke oder rechte Bildschirmhälfte, um zu lenken.':'Lenke mit A / D oder ← / →.')+' '+tr('Springen und Schießen passieren automatisch. Fällst du unten aus dem Bild, ist der Run vorbei.')},
  enemy:{title:'Gegner',tx:()=>'Deine Waffe zielt von selbst. Berührungen und gegnerische Schüsse kosten Leben.'},
@@ -3208,6 +3213,9 @@ bindBuildInfo('pBuild','pInfo');bindBuildInfo('oBuild','oInfo');
 /* ================= WAS IST NEU (Changelog) ================= */
 // Neue Einträge immer OBEN anfügen und GAME_VER erhöhen. Spieler sehen das Fenster einmal pro Version.
 const CHANGELOG=[
+ {v:'0.9.16',
+  neu:[['Handy: Spiel füllt jetzt den ganzen Bildschirm','Phone: game now fills the whole screen']],
+  fix:[]},
  {v:'0.9.15',
   neu:[['Handy: eigener Knopf für den Doppelsprung (unten rechts)','Phone: dedicated double jump button (bottom right)']],
   fix:[['Events lösen erst aus, wenn man die Höhe ihrer Plattform erreicht','Events only trigger once you reach the height of their platform']]},

@@ -264,7 +264,7 @@ html.touch .card kbd{display:none}
 .wscard img.cprev{width:3em;height:3em;flex:none;border-radius:.4em;background:var(--panel2);image-rendering:auto}
 .wscard.eq{box-shadow:inset 0 0 0 2px var(--gold)}
 .wsbuy.eqb{background:var(--teal)}
-.wsbuy.ach{background:var(--panel2);color:var(--muted);font-size:.66em;line-height:1.2;min-width:6.5em;cursor:default}
+.wsbuy.ach{background:var(--panel2);color:var(--muted);font-size:.66em;line-height:1.2;min-width:6.5em;max-width:11em;white-space:normal;text-align:center;cursor:default}
 .logo2{width:min(88%,19em);height:auto;overflow:visible;filter:drop-shadow(0 .4em .8em rgba(0,0,0,.45))}
 .logo2 .chest{animation:chestbob 2.4s ease-in-out infinite;transform-box:fill-box}
 @keyframes chestbob{0%,100%{transform:translate(174px,60px)}50%{transform:translate(174px,55px) rotate(-3deg)}}
@@ -3240,7 +3240,7 @@ function drawCosFx(){for(const q of G.cfx){const a=Math.min(1,q.life/q.max*1.6);
 // Vorschaubild für die Werkstatt
 const COS_PREV={};
 function cosPreview(cat,id){const key=cat+id;if(COS_PREV[key])return COS_PREV[key];const cv2=document.createElement('canvas');cv2.width=cv2.height=96;const g=cv2.getContext('2d');g.scale(2,2);
- if(cat==='hat'){g.translate(24,42);drawFigure(g,'abenteurer',1,0,0,.5);drawHat(g,id,'abenteurer',1,0,.5)}
+ if(cat==='hat'){if(id==='h_schirm'){g.translate(23,49);g.scale(.68,.68)}else g.translate(24,42);drawFigure(g,'abenteurer',1,0,0,.5);drawHat(g,id,'abenteurer',1,0,.5)}
  else{g.translate(24,30);const cols={t_funken:['#ffd166','#ff9a4a'],t_blatt:['#7cc47a','#a8d84f'],t_feuer:['#ffd36a','#ff6b5e'],t_regen:['#ff6b5e','#ffd166','#5fe0c8','#9fd2ff','#c4a6ff'],t_sterne:['#fff3c4','#f2c14e'],l_herz:['#ff7ad9'],l_muenz:[C.gold],l_blitz:['#9fd2ff'],l_konfetti:['#ff6b5e','#ffd166','#5fe0c8','#c4a6ff']}[id]||['#fff'];
   const sym={t_sterne:'✦',l_herz:'♥'}[id];
   for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=cat==='trail'?4+i*1.6:10,x=cat==='trail'?Math.sin(i*.9)*4:Math.cos(a)*r,y=cat==='trail'?-12+i*3:Math.sin(a)*r*.6-2;g.fillStyle=cols[i%cols.length];

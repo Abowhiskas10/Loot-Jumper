@@ -1,6 +1,6 @@
 // LOOT JUMPER – Build-Skript (läuft automatisch in GitHub Actions)
 // 1. Ersetzt die Google-Fonts-Links in index.html durch lokal mitgelieferte Schriften (Datenschutz)
-// 2. Baut "dist/" (Website für GitHub Pages) und "www/" (Inhalt der Android-App)
+// 2. Baut "dist/" (Website für GitHub Pages) und "www/" (Inhalt der Android-App), inklusive Musik aus music/
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -48,6 +48,9 @@ for (const out of ['dist', 'www']) {
   fs.writeFileSync(path.join(o, 'index.html'), html);
   for (const [name, src] of fontFiles) fs.copyFileSync(src, path.join(o, 'fonts', name));
   for (const f of COPY) if (fs.existsSync(path.join(ROOT, f))) fs.copyFileSync(path.join(ROOT, f), path.join(o, f));
+  // Musik (music/*.mp3)
+  const md = path.join(ROOT, 'music');
+  if (fs.existsSync(md)) { fs.mkdirSync(path.join(o, 'music'), { recursive: true }); for (const f of fs.readdirSync(md)) if (f.endsWith('.mp3')) fs.copyFileSync(path.join(md, f), path.join(o, 'music', f)); }
   console.log(`${out}/ fertig`);
 }
 // GitHub Pages: keine Jekyll-Verarbeitung
